@@ -1,0 +1,26 @@
+<!doctype html><html><head>
+<title>This is an HTML canvas</title>
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body><h1>Playing the HTML canvas</h1>
+<!--// after "Introducing JavaScript Game Development" by Stuart.-->
+<h4>Time-stamp: <2019-09-09 12:14:58 Chuck Siska></h4>
+
+<canvas id="asteroids" width="400" height="400"></canvas>
+
+</body>
+<script src="../assets/draw-rect.js"></script>
+<script src="../assets/shapes.js"></script>
+<script src="../assets/tools.js"></script>
+<script>
+// after "Introducing JavaScript Game Development" by Stuart.
+  var canvas = document.getElementById( "asteroids" );
+  var context = canvas.getContext( "2d" );
+  draw_rect( context );
+  draw_title( context );
+  // Draw a grid
+  draw_grid( context, 10, 50, 'white', 'yellow' );
+
+  draw_shapes( context );
+</script>
+</html>

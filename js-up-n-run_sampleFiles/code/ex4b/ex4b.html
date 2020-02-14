@@ -1,0 +1,27 @@
+<!doctype html><html><head>
+<title>Playing with the HTML canvas</title>
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body><h1>Playing with the HTML canvas</h1>
+<h4>Time-stamp: <2019-09-09 12:22:25 Chuck Siska></h4>
+
+<canvas id="rotation" width="400" height="400"></canvas>
+
+</body>
+<script src="../assets/draw-rect.js"></script>
+<script src="../assets/draw-pacman.js"></script>
+<script src="../assets/tools.js"></script>
+<script>
+  var canvas = document.getElementById( "rotation" );
+  var context = canvas.getContext( "2d" );
+  draw_rect( context );
+  //draw_title( context );
+  draw_text( context, "My Fancy Grey Oops!", {xpos: 50, ypos: 100 } );
+  // Draw a grid
+  draw_grid( context, 10, 50, 'white', 'yellow' );
+
+  // Stuff
+  draw_rot_ships2( context );
+
+</script>
+</html>
