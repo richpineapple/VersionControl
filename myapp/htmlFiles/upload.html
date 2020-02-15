@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>The V.2 Upload Page</title>
+    </head>
+    <body>
+        This is the V.2 Upload Page
+
+        <!-- take care of upload, and when no file is uploaded part -->
+        <form class="" action="/handleupload" enctype="multipart/form-data" method="post" onSubmit="if(document.getElementById('fileinput').value == '') return false;" >
+            <input id="fileinput" type="file" name="testfile[]" value="" multiple />
+            <input type="submit"  value="Upload Some Files" />
+            <form  />
+
+        </form>
+
+    </body>
+</html>
