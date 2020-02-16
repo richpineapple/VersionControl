@@ -4,27 +4,24 @@ const port = 3000;
 
 const path = require("path");
 const formidable = require("formidable");
+
 const htmlsFolder = path.join(__dirname, "htmlFiles/")
 const version = 6;
 
-//test sending html page
-app.get('/upload', function(req, res){
-    //res.sendFile(path.join(__dirname, 'upload_v2.html'));
-    res.sendFile(path.join(htmlsFolder, 'upload.html'));
-    //res.render(path.join(__dirname, '/htmlFiles/upload_v2.html'));
-    //the second line is not going to show up,
-    //so I guess send is like a return
-});
-
-
-//to parse the post
+//root
 app.get('/', (req, res) => res.send("hello world, version " + version));
 
+//the url that user can upload file(s)
+// http://localhost:3000/upload
+app.get('/upload', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'upload.html'));
+});
 
+//the part that will be activated to accpet any upload when user upload
 app.post('/handleupload', (req, res)=>{
     new formidable.IncomingForm().parse(req)
 
-        //not really working...
+        //error catching not really working...
         .on("error", (err) =>{
             res.sendFile(htmlsFolder + 'uploadFailed.html');
         })
@@ -44,4 +41,5 @@ app.post('/handleupload', (req, res)=>{
 
 
 
+//don't remove this line, it keeps the the listening to the port, not let the app to end
 app.listen(port, () => console.log(`version ${version}: listen to port : ${port}`));
