@@ -41,8 +41,8 @@ app.get('/scan', (req, res) => {
 
     //_getAllFilesFromFolder(userPath);
     //hard code now, need user input later
-    var tempResult = _getAllFilesFromFolder("C:\\Users\\siwei\\Desktop\\college_stuff\\GitHub\\helloWorld\\CECS343_VersionControl\\myapp\\repos");
-    //var tempResult = _getAllFilesFromFolder("C:\\Users\\siwei\\Desktop\\college_stuff\\GitHub\\helloWorld\\CECS343_VersionControl");
+    //var tempResult = _getAllFilesFromFolder("C:\\Users\\siwei\\Desktop\\college_stuff\\GitHub\\helloWorld\\CECS343_VersionControl\\myapp\\repos");
+    var tempResult = _getAllFilesFromFolder("C:\\Users\\siwei\\Desktop\\college_stuff\\GitHub\\helloWorld\\CECS343_VersionControl");
 
     console.log("Done with scan");
 
