@@ -10,6 +10,18 @@ const formidable = require("formidable");
 const htmlsFolder = path.join(__dirname, "htmlFiles/")
 const version = 6;
 
+//potential code to accept user input
+app.get('/getpathinput', (req, res) =>{
+    res.sendFile(htmlsFolder + "getPathInput.html");
+    var userInput = req.query.myInputBox;
+
+    if(!userInput){
+        return;
+    }
+    //res.send("get input: " + userInput);
+    console.log("the input: " + userInput);
+    res.sendFile(htmlsFolder + "getPathInput.html");
+});
 
 //the scan user's folder's part
 app.get('/scan', (req, res) => {
@@ -65,6 +77,7 @@ app.get('/', (req, res) => res.send("hello world, version " + version));
 app.get('/upload', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'upload.html'));
 });
+
 
 //the part that will be activated to accpet any upload when user upload
 app.post('/handleupload', (req, res)=>{
