@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
 const port = 3000;
-
+//for dealing with file paths
 const path = require("path");
+
+//for handling upload files..
 const formidable = require("formidable");
 
 const htmlsFolder = path.join(__dirname, "htmlFiles/")
