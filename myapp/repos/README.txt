@@ -1,3 +1,4 @@
-#this readme is in the folder of repos
+#this readme should be in the folder of htmlFiles
 
-this folder will contain the projects the user created
+#this folder "htmlFiles", should contain all the html files used in this
+project
