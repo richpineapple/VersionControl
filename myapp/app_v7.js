@@ -61,8 +61,14 @@ app.get('/getpathinput', (req, res) =>{
     });
 
     //save it to server
+    //scanResult will be used to upload the files in that location later
+    filesystem.writeFile(helperFilesFolder + "scanResult.txt", content ,function(err){
+        if (err) throw err;
+    });
+
     //FIXME: need to check if repeat
-    filesystem.writeFile(helperFilesFolder + "test.txt", content ,function(err){
+    //the paathToScan.txt is used to save the paths user requests for scanning
+    filesystem.writeFile(helperFilesFolder + "pathToScan.txt", userInput ,function(err){
         if (err) throw err;
     });
 
