@@ -7,8 +7,11 @@ const path = require("path");
 //for handling upload files..
 const formidable = require("formidable");
 
-const htmlsFolder = path.join(__dirname, "htmlFiles/")
+const filesystem = require("fs");
+const htmlsFolder = path.join(__dirname, "htmlFiles/");
+const helperFilesFolder = path.join(__dirname, "helperFiles/");
 const version = 6;
+
 
 //potential code to accept user input
 app.get('/getpathinput', (req, res) =>{
@@ -26,7 +29,6 @@ app.get('/getpathinput', (req, res) =>{
 
     //do the scan part
     var _getAllFilesFromFolder = function(dir) {
-        var filesystem = require("fs");
         var results = [];
 
         filesystem.readdirSync(dir).forEach(function(file) {
@@ -52,9 +54,25 @@ app.get('/getpathinput', (req, res) =>{
     //FIXME: this is just the temporary solution, should formatted in some way
     //in html page or so
     var resultToSend = "<--- Folder Structure List ---->";
+    var content = "";
     tempResult.forEach((item) => {
-        resultToSend = resultToSend + item + "\n";
+        //resultToSend = resultToSend + item + "\n";
+        content = content + item + "\n";
     });
+
+    //save it to server
+    //scanResult will be used to upload the files in that location later
+    filesystem.writeFile(helperFilesFolder + "scanResult.txt", content ,function(err){
+        if (err) throw err;
+    });
+
+    //FIXME: need to check if repeat
+    //the paathToScan.txt is used to save the paths user requests for scanning
+    filesystem.writeFile(helperFilesFolder + "pathToScan.txt", userInput ,function(err){
+        if (err) throw err;
+    });
+
+    resultToSend += content
 
     res.send("done: " + resultToSend);
 
