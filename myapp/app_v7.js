@@ -126,6 +126,9 @@ var _getAllFilesFromFolder = function(dir) {
 
 };
 
+app.get('/main', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
+});
 
 //don't remove this line, it keeps the the listening to the port, not let the app to end
 app.listen(port, () => console.log(`version ${version}: listen to port : ${port}`));
