@@ -10,6 +10,7 @@ const formidable = require("formidable");
 const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const helperFilesFolder = path.join(__dirname, "helperFiles/");
+const currentFilePath = path.join(__dirname + "/");
 const version = 6;
 
 
@@ -25,44 +26,35 @@ app.get('/getpathinput', (req, res) =>{
         return;
     }
 
+    //fixme delete later
     console.log("the input: " + userInput);
-
-    //do the scan part
-    var _getAllFilesFromFolder = function(dir) {
-        var results = [];
-
-        filesystem.readdirSync(dir).forEach(function(file) {
-
-            file = dir+'/'+file;
-            var stat = filesystem.statSync(file);
-
-            if (stat && stat.isDirectory()) {
-                results = results.concat(_getAllFilesFromFolder(file))
-            } else results.push(file);
-
-        });
-
-        console.log("the results: " , results);
-
-        return results;
-
-    };
 
     //call the scan function, and get the result list
     var tempResult = _getAllFilesFromFolder(userInput);
 
+    //FIXME: because of the user form, I can not send another html file..
+    res.sendFile(htmlsFolder + 'scanCompleted.html');
+    /*
+    if(!tempResult.length){
+        console.log("the length: " + tempResult.length);
+        //res.sendFile(htmlsFolder + "inputError.html");
+        res.sendFile(htmlsFolder + 'uploadSuccess.html');
+        //res.send("wrong input..");
+        return;
+    }
+
+    console.log("result: " + tempResult);
+
     //FIXME: this is just the temporary solution, should formatted in some way
     //in html page or so
-    var resultToSend = "<--- Folder Structure List ---->";
-    var content = "";
+    var scanResult = "";
     tempResult.forEach((item) => {
-        //resultToSend = resultToSend + item + "\n";
-        content = content + item + "\n";
+        scanResult = scanResult + item + "\n";
     });
 
     //save it to server
     //scanResult will be used to upload the files in that location later
-    filesystem.writeFile(helperFilesFolder + "scanResult.txt", content ,function(err){
+    filesystem.writeFile(helperFilesFolder + "scanResult.txt", scanResult,function(err){
         if (err) throw err;
     });
 
@@ -72,12 +64,9 @@ app.get('/getpathinput', (req, res) =>{
         if (err) throw err;
     });
 
-    resultToSend += content
 
-    res.send("done: " + resultToSend);
-
-
-
+    res.send("done: " + scanResult);
+    */
 });
 
 
@@ -113,6 +102,29 @@ app.post('/handleupload', (req, res)=>{
 })
 
 
+//do the scan part
+var _getAllFilesFromFolder = function(dir) {
+    var results = [];
+
+    try{
+        filesystem.readdirSync(dir).forEach(function(file) {
+
+            file = dir+'/'+file;
+            var stat = filesystem.statSync(file);
+
+            if (stat && stat.isDirectory()) {
+                results = results.concat(_getAllFilesFromFolder(file))
+            } else results.push(file);
+
+        });
+    }catch(err){
+        //catch errors
+        console.log("something is wrong..with path");
+    }
+
+    return results;
+
+};
 
 
 //don't remove this line, it keeps the the listening to the port, not let the app to end
