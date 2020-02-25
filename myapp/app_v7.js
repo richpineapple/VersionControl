@@ -113,6 +113,26 @@ app.post('/handleupload', (req, res)=>{
 })
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//main page for website
 app.get('/main', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
 });
