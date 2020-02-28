@@ -11,10 +11,10 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const helperFilesFolder = path.join(__dirname, "helperFiles/");
 const currentFilePath = path.join(__dirname + "/");
-const version = 6;
+const version = 7;
 
 //now we are able to read the files in certain path, then saving them should not be a problem
-app.get('/readFileInPath', (req, res) =>{
+app.get('/commit', (req, res) =>{
 
     res.sendFile(htmlsFolder + "getPathInput.html");
     //getting user input from the html user input box
@@ -30,7 +30,20 @@ app.get('/readFileInPath', (req, res) =>{
     console.log("the input: " + userInput);
 
     //call the scan function, and get the result list
-    var tempResult = readAllFilesFromFolder(userInput);
+    var results =  _getAllFilesFromFolder(userInput);
+
+    console.log("finished the search..");
+    results.forEach(function(file){
+        console.log("======================================================");
+        console.log("read file: " + file);
+        var stat = filesystem.statSync(file);
+        console.log("length: " + stat.size);
+        var content = filesystem.readFileSync(file);
+
+        //should start writing to the server here , and do the calculating as well
+        console.log("the content: " + content);
+        console.log("++++++++++++++++++++++++++++++++++++");
+    });
 });
 
 
@@ -124,12 +137,13 @@ app.post('/handleupload', (req, res)=>{
 
 //do the scan part
 var _getAllFilesFromFolder = function(dir) {
+    //the in searching path, the last element should be the project base folder
     var results = [];
 
     try{
         filesystem.readdirSync(dir).forEach(function(file) {
 
-            file = dir+'/'+file;
+            file = path.join(dir, '/'+file);
             var stat = filesystem.statSync(file);
 
             if (stat && stat.isDirectory()) {
@@ -142,49 +156,19 @@ var _getAllFilesFromFolder = function(dir) {
         console.log("something is wrong..with path");
     }
 
-    return results;
-
-};
-
-
-//test if we can read the data directly from the path
-var readAllFilesFromFolder = function(dir) {
-    var results = [];
-
-    try{
-        filesystem.readdirSync(dir).forEach(function(file) {
-
-            //file = dir+'/'+file;
-            file = path.join(dir, "/"+file);
-
-
-            var stat = filesystem.statSync(file);
-
-            if (stat && stat.isDirectory()) {
-                results = results.concat(_getAllFilesFromFolder(file))
-            } else results.push(file);
-
-        });
-    }catch(err){
-        //catch errors
-        console.log("something is wrong..with path");
-    }
-
-    console.log("finished the search..");
-    results.forEach(function(file){
-        console.log("======================================================");
-        console.log("read file: " + file);
-        var stat = filesystem.statSync(file);
-        console.log("length: " + stat.size);
-        var content = filesystem.readFileSync(file);
-        console.log("the content: " + content);
-        console.log("++++++++++++++++++++++++++++++++++++");
-
-    });
+    //FIXME: do the ArtID and save here..
 
     return results;
 
 };
+
+//becase the path sum is the relative path, so we need to know where is the starting point
+//in this case , the starting point should be current Project paths
+//different projects will have different starting points
+var saveFileToServer = function(absFilePath, projectPath){
+    //do we save and calculate the art ID at the same time so we don't go over the same file twice
+};
+
 
 app.get('/main', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
