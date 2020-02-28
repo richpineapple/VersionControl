@@ -51,7 +51,12 @@ app.get('/commit', (req, res) =>{
 
     //loop over the files according to all the file paths
     results.forEach(function(file){
-        console.log("read file: " + file);
+        //ignore dot files
+        if (path.basename(file).charAt(0) === "."){
+            console.log("file is dot file: " + file);
+            return;
+        }
+
         var stat = filesystem.statSync(file);
         //content is a long string of everything in the file
         var content = String(filesystem.readFileSync(file));
