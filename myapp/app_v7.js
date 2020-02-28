@@ -131,7 +131,6 @@ app.get('/commit', (req, res) =>{
             //step 5: save to the manifest file
         //}
 
-
     });
 
 });

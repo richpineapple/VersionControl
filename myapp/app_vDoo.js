@@ -29,6 +29,10 @@ app.get('/commit', (req, res) =>{
 
     //fixme delete later
     console.log("the input: " + userInput);
+    //var temp = userInput.split('\\');
+    //console.log("the userinput basename: " + path.basename(userInput));
+    var projectBaseFolder = path.basename(userInput);
+
 
     //call the scan function, and get the result list
     var results =  _getAllFilesFromFolder(userInput);
@@ -43,39 +47,80 @@ app.get('/commit', (req, res) =>{
     //temp variable
     var count = 0;
 
+    var checkSumNumLoop = [1, 7, 3, 11];
+
     //loop over the files according to all the file paths
     results.forEach(function(file){
-        console.log("read file: " + file);
+        //ignore dot files
+        if (path.basename(file).charAt(0) === "."){
+            console.log("file is dot file: " + file);
+            return;
+        }
+
         var stat = filesystem.statSync(file);
         //content is a long string of everything in the file
-        var content = filesystem.readFileSync(file);
+        var content = String(filesystem.readFileSync(file));
+
+        var filePathList = file.split("\\");
+
+        var relativePathList = [];
+
+        //the relative path starts from the project folder name..
+        for(let idx = 0; idx < filePathList.length; idx++ ){
+            if (filePathList[idx] === projectBaseFolder){
+                relativePathList = filePathList.slice(idx);
+                break;
+            }
+        };
+
+        //this is for the path count part
+        var relativePathStr = "";
+        relativePathList.forEach(function(pathPart){
+            relativePathStr = path.join(relativePathStr, pathPart);
+        });
+
+        console.log("the relative path: " + relativePathStr);
+
 
         //the format of artID: Pa-Lb-Cc
-        var artID = "testFile_" + count;
+        //var artID = "testFile_" + count;
+        var artID = "";
 
         //step 1: do the path sum
+        var pathCount = 0;
+        for(let idx = 0; idx < relativePathStr.length; idx++){
+            //console.log("current char: " + relativePathStr.charAt(idx) + ": " + relativePathStr.charCodeAt(idx));
+            pathCount = pathCount + relativePathStr.charCodeAt(idx) * checkSumNumLoop[idx % checkSumNumLoop.length];
+        }
+        artID = artID + "P" + pathCount + "-";
 
         //step 2: the length for the artID
-        //stat.size;
+        var sizeCount = stat.size;
+        artID = artID + "L" + sizeCount + "-";
 
         //FIXME: step 3: calculate the c for artID here
 
-        content.forEach(function(character){
-            //console.log("current char: " + character);
-        });
+        var contentCount = 0;
+        for(let idx = 0; idx < content.length; idx++){
+            contentCount = contentCount + content.charCodeAt(idx) * checkSumNumLoop[idx% checkSumNumLoop.length];
 
-        var repeated = false;
+        }
+        artID = artID + "C" + contentCount;
+
+        //make sure they have the origianl extension
+        var origianlExtension = path.basename(file).split(".").pop();
+        artID = artID + "." + origianlExtension;
+
+
         //step 4: do comparsion before try to save to the server
-        repoFileNames.forEach(function(fileName){
-            console.log("the file name in server: " + fileName);
-
-            //check if the artID already exist in the server
-            if(fileName === artID){
+        var repeated = false;
+        for(let idx = 0; idx < repoFileNames.length; idx++){
+            if(repoFileNames[idx] === artID){
                 console.log("name repeated..");
                 repeated = true;
-                return;
+                break;
             }
-        });
+        }
 
         //then do the save
         if(!repeated){
@@ -83,13 +128,34 @@ app.get('/commit', (req, res) =>{
             filesystem.writeFileSync(path.join(repoPath, artID), content);
 
         }
-        //temp variable
-        count++;
 
         //step 5: save to the manifest file
-        var artiFact_file = artID;
-        var manifesto = 0;
-        var locate_manifesto = filesystem.readFileSync(repoPath);
+        var location = path.join(__dirname + "/repos/.manifest.txt");
+        
+        var today = new Date().toLocaleDateString(undefined,{
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+
+        //checks if manifest file exists
+        filesystem.access(location, filesystem.F_OK, (err) =>{
+            if(err)
+            {
+                console.log("Something is wrong");
+                //if it does not create it
+                filesystem.writeFileSync(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today);
+                console.log("Creating file....");
+                return;
+            }
+            filesystem.appendFile(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today, function (err) {
+                if (err) throw err;
+                console.log('Saved!');
+                });
+        })
+        
     });
 
 });
