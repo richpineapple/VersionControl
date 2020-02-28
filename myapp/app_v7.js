@@ -13,6 +13,26 @@ const helperFilesFolder = path.join(__dirname, "helperFiles/");
 const currentFilePath = path.join(__dirname + "/");
 const version = 6;
 
+//now we are able to read the files in certain path, then saving them should not be a problem
+app.get('/readFileInPath', (req, res) =>{
+
+    res.sendFile(htmlsFolder + "getPathInput.html");
+    //getting user input from the html user input box
+    var userInput = req.query.myInputBox;
+
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!userInput){
+        return;
+    }
+
+    //fixme delete later
+    console.log("the input: " + userInput);
+
+    //call the scan function, and get the result list
+    var tempResult = readAllFilesFromFolder(userInput);
+});
+
 
 //potential code to accept user input
 app.get('/getpathinput', (req, res) =>{
@@ -121,6 +141,46 @@ var _getAllFilesFromFolder = function(dir) {
         //catch errors
         console.log("something is wrong..with path");
     }
+
+    return results;
+
+};
+
+
+//test if we can read the data directly from the path
+var readAllFilesFromFolder = function(dir) {
+    var results = [];
+
+    try{
+        filesystem.readdirSync(dir).forEach(function(file) {
+
+            //file = dir+'/'+file;
+            file = path.join(dir, "/"+file);
+
+
+            var stat = filesystem.statSync(file);
+
+            if (stat && stat.isDirectory()) {
+                results = results.concat(_getAllFilesFromFolder(file))
+            } else results.push(file);
+
+        });
+    }catch(err){
+        //catch errors
+        console.log("something is wrong..with path");
+    }
+
+    console.log("finished the search..");
+    results.forEach(function(file){
+        console.log("======================================================");
+        console.log("read file: " + file);
+        var stat = filesystem.statSync(file);
+        console.log("length: " + stat.size);
+        var content = filesystem.readFileSync(file);
+        console.log("the content: " + content);
+        console.log("++++++++++++++++++++++++++++++++++++");
+
+    });
 
     return results;
 
