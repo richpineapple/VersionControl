@@ -11,10 +11,21 @@ fs.access(location, fs.F_OK, (err) =>{
         fs.writeFileSync(location, "creator DOosadoooo!\n");
         console.log("Creating file....");
     }
-    fs.writeFile(location,"123");
-    var readMe = fs.readFileSync(location, 'utf8');
-    console.log(readMe);
+    
 })
+var today = new Date().toLocaleDateString(undefined,{
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+	minute: '2-digit',
+})
+
+fs.appendFile(location, "\nNewUpdate      "+"Commit       " + today, function (err) {
+    if (err) throw err;
+    console.log('Saved!');
+    });
+
 
 
 
