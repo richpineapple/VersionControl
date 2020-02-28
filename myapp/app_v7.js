@@ -11,6 +11,7 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const helperFilesFolder = path.join(__dirname, "helperFiles/");
 const currentFilePath = path.join(__dirname + "/");
+const repoPath = path.join(__dirname + "/repos/");
 const version = 7;
 
 //now we are able to read the files in certain path, then saving them should not be a problem
@@ -32,18 +33,62 @@ app.get('/commit', (req, res) =>{
     //call the scan function, and get the result list
     var results =  _getAllFilesFromFolder(userInput);
 
+    //get what files we already have in the repo part, for comparsion later
+    //var repoFiles = _getAllFilesFromFolder(repoPath);
+    var repoFileNames = getAllBaseName(repoPath);
+
+
     console.log("finished the search..");
+
+    //temp variable
+    var count = 0;
+
+    //loop over the files
     results.forEach(function(file){
-        console.log("======================================================");
         console.log("read file: " + file);
         var stat = filesystem.statSync(file);
-        console.log("length: " + stat.size);
         var content = filesystem.readFileSync(file);
 
-        //should start writing to the server here , and do the calculating as well
-        console.log("the content: " + content);
-        console.log("++++++++++++++++++++++++++++++++++++");
+        //the format of artID: Pa-Lb-Cc
+        var artID = "testFile_" + count;
+
+        //step 1: do the path sum
+
+        //step 2: the length for the artID
+        //stat.size;
+
+        //FIXME: step 3: calculate the c for artID here
+
+        content.forEach(function(character){
+            //console.log("current char: " + character);
+        });
+
+        var repeated = false;
+        //step 4: do comparsion before try to save to the server
+        repoFileNames.forEach(function(fileName){
+            console.log("the file name in server: " + fileName);
+
+            //check if the artID already exist in the server
+            if(fileName === artID){
+                console.log("name repeated..");
+                repeated = true;
+                return;
+            }
+        });
+
+        //then do the save
+        if(!repeated){
+            console.log("try to save to repo: " + file);
+            filesystem.writeFileSync(path.join(repoPath, artID), content);
+
+        }
+        //temp variable
+        count++;
+
+        //step 5: save to the manifest file
+        
     });
+
 });
 
 
@@ -132,7 +177,17 @@ app.post('/handleupload', (req, res)=>{
 
     res.sendFile(htmlsFolder + 'uploadSuccess.html');
 
-})
+});
+
+var getAllBaseName = function(dir){
+    var allFilesPath = _getAllFilesFromFolder(dir);
+    var allBaseNames = [];
+    allFilesPath.forEach(function(filePath){
+        allBaseNames.push(path.basename(filePath));
+    });
+
+    return allBaseNames;
+};
 
 
 //do the scan part
@@ -156,7 +211,6 @@ var _getAllFilesFromFolder = function(dir) {
         console.log("something is wrong..with path");
     }
 
-    //FIXME: do the ArtID and save here..
 
     return results;
 
