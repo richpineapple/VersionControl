@@ -29,6 +29,9 @@ app.get('/commit', (req, res) =>{
 
     //fixme delete later
     console.log("the input: " + userInput);
+    var temp = userInput.split('\\');
+    //console.log("the userinput basename: " + path.basename(userInput));
+    console.log("the split result: " + temp);
 
     //call the scan function, and get the result list
     var results =  _getAllFilesFromFolder(userInput);
@@ -42,6 +45,8 @@ app.get('/commit', (req, res) =>{
 
     //temp variable
     var count = 0;
+
+    var checkSumNums = [1, 7, 3, 11];
 
     //loop over the files according to all the file paths
     results.forEach(function(file){
