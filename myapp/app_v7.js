@@ -16,6 +16,18 @@ const version = 7;
 
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
+    //var location = path.join(__dirname + "/repos/.manifest.txt");
+    var manLocation = path.join(__dirname + "/repos/.manifest.txt");
+    //check if manifest file exist, if not, create it
+    filesystem.access(manLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(manLocation, "", (err) =>{
+                console.log("finished creating");
+            });
+        }
+    });
+
 
     res.sendFile(htmlsFolder + "getPathInput.html");
     //getting user input from the html user input box
@@ -129,8 +141,7 @@ app.get('/commit', (req, res) =>{
         filesystem.writeFileSync(path.join(repoPath, artID), content);
 
             //step 5: save to the manifest file
-            var location = path.join(__dirname + "/repos/.manifest.txt");
-        
+
             var today = new Date().toLocaleDateString(undefined,{
                 day: '2-digit',
                 month: '2-digit',
@@ -138,22 +149,11 @@ app.get('/commit', (req, res) =>{
                 hour: '2-digit',
                 minute: '2-digit',
             })
-    
-            //checks if manifest file exists
-            filesystem.access(location, filesystem.F_OK, (err) =>{
-                if(err)
-                {
-                    console.log("Something is wrong");
-                    //if it does not create it
-                    filesystem.writeFileSync(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n");
-                    console.log("Creating file....");
-                    return;
-                }
-                filesystem.appendFile(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
-                    if (err) throw err;
-                    console.log('Saved!');
-                    });
-            })
+
+            filesystem.appendFile(manLocation, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
+                if (err) throw err;
+                console.log('Saved!');
+            });
 
     });
 
