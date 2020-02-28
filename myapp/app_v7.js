@@ -138,16 +138,17 @@ app.get('/commit', (req, res) =>{
                 hour: '2-digit',
                 minute: '2-digit',
             })
-    
             //checks if manifest file exists
             filesystem.access(location, filesystem.F_OK, (err) =>{
                 if(err)
                 {
                     console.log("Something is wrong");
                     //if it does not create it
-                    filesystem.writeFileSync(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n");
-                    console.log("Creating file....");
-                    return;
+                    filesystem.writeFile(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n",function (err){
+                        console.log("Creating file....");
+                    });
+                    
+                        return;
                 }
                 filesystem.appendFile(location, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
                     if (err) throw err;
