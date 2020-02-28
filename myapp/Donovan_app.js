@@ -87,7 +87,9 @@ app.get('/commit', (req, res) =>{
         count++;
 
         //step 5: save to the manifest file
-
+        var artiFact_file = artID;
+        var manifesto = 0;
+        var locate_manifesto = filesystem.readFileSync(repoPath);
     });
 
 });
