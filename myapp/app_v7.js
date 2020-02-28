@@ -54,7 +54,6 @@ app.get('/commit', (req, res) =>{
         console.log("read file: " + file);
         var stat = filesystem.statSync(file);
         //content is a long string of everything in the file
-        //var content = filesystem.readFileSync(file);
         var content = String(filesystem.readFileSync(file));
 
         var filePathList = file.split("\\");
@@ -108,18 +107,15 @@ app.get('/commit', (req, res) =>{
         artID = artID + "." + origianlExtension;
 
 
-        var repeated = false;
         //step 4: do comparsion before try to save to the server
-        repoFileNames.forEach(function(fileName){
-            console.log("the file name in server: " + fileName);
-
-            //check if the artID already exist in the server
-            if(fileName === artID){
+        var repeated = false;
+        for(let idx = 0; idx < repoFileNames.length; idx++){
+            if(repoFileNames[idx] === artID){
                 console.log("name repeated..");
                 repeated = true;
-                return;
+                break;
             }
-        });
+        }
 
         //then do the save
         if(!repeated){
@@ -127,8 +123,6 @@ app.get('/commit', (req, res) =>{
             filesystem.writeFileSync(path.join(repoPath, artID), content);
 
         }
-        //temp variable
-        count++;
 
         //step 5: save to the manifest file
 
