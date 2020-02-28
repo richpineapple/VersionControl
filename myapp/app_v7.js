@@ -113,23 +113,24 @@ app.get('/commit', (req, res) =>{
 
 
         //step 4: do comparsion before try to save to the server
-        var repeated = false;
+        //var repeated = false;
         for(let idx = 0; idx < repoFileNames.length; idx++){
             if(repoFileNames[idx] === artID){
                 console.log("name repeated..");
-                repeated = true;
-                break;
+                return;
+                //repeated = true;
+                //break;
             }
         }
 
         //then do the save
-        if(!repeated){
-            console.log("try to save to repo: " + file);
-            filesystem.writeFileSync(path.join(repoPath, artID), content);
+        //if(!repeated){
+        console.log("try to save to repo: " + file);
+        filesystem.writeFileSync(path.join(repoPath, artID), content);
 
-        }
+            //step 5: save to the manifest file
+        //}
 
-        //step 5: save to the manifest file
 
     });
 
