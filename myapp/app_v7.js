@@ -29,9 +29,10 @@ app.get('/commit', (req, res) =>{
 
     //fixme delete later
     console.log("the input: " + userInput);
-    var temp = userInput.split('\\');
+    //var temp = userInput.split('\\');
     //console.log("the userinput basename: " + path.basename(userInput));
-    console.log("the split result: " + temp);
+    var projectBaseFolder = path.basename(userInput);
+
 
     //call the scan function, and get the result list
     var results =  _getAllFilesFromFolder(userInput);
@@ -46,28 +47,66 @@ app.get('/commit', (req, res) =>{
     //temp variable
     var count = 0;
 
-    var checkSumNums = [1, 7, 3, 11];
+    var checkSumNumLoop = [1, 7, 3, 11];
 
     //loop over the files according to all the file paths
     results.forEach(function(file){
         console.log("read file: " + file);
         var stat = filesystem.statSync(file);
         //content is a long string of everything in the file
-        var content = filesystem.readFileSync(file);
+        //var content = filesystem.readFileSync(file);
+        var content = String(filesystem.readFileSync(file));
+
+        var filePathList = file.split("\\");
+
+        var relativePathList = [];
+
+        //the relative path starts from the project folder name..
+        for(let idx = 0; idx < filePathList.length; idx++ ){
+            if (filePathList[idx] === projectBaseFolder){
+                relativePathList = filePathList.slice(idx);
+                break;
+            }
+        };
+
+        //this is for the path count part
+        var relativePathStr = "";
+        relativePathList.forEach(function(pathPart){
+            relativePathStr = path.join(relativePathStr, pathPart);
+        });
+
+        console.log("the relative path: " + relativePathStr);
+
 
         //the format of artID: Pa-Lb-Cc
-        var artID = "testFile_" + count;
+        //var artID = "testFile_" + count;
+        var artID = "";
 
         //step 1: do the path sum
+        var pathCount = 0;
+        for(let idx = 0; idx < relativePathStr.length; idx++){
+            //console.log("current char: " + relativePathStr.charAt(idx) + ": " + relativePathStr.charCodeAt(idx));
+            pathCount = pathCount + relativePathStr.charCodeAt(idx) * checkSumNumLoop[idx % checkSumNumLoop.length];
+        }
+        artID = artID + "P" + pathCount + "-";
 
         //step 2: the length for the artID
-        //stat.size;
+        var sizeCount = stat.size;
+        artID = artID + "L" + sizeCount + "-";
 
         //FIXME: step 3: calculate the c for artID here
 
-        content.forEach(function(character){
-            //console.log("current char: " + character);
-        });
+        var contentCount = 0;
+        for(let idx = 0; idx < content.length; idx++){
+            contentCount = contentCount + content.charCodeAt(idx) * checkSumNumLoop[idx% checkSumNumLoop.length];
+
+        }
+        artID = artID + "C" + contentCount;
+
+        //make sure they have the origianl extension
+        var origianlExtension = path.basename(file).split(".").pop();
+        artID = artID + "." + origianlExtension;
+
 
         var repeated = false;
         //step 4: do comparsion before try to save to the server
