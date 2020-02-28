@@ -43,10 +43,11 @@ app.get('/commit', (req, res) =>{
     //temp variable
     var count = 0;
 
-    //loop over the files
+    //loop over the files according to all the file paths
     results.forEach(function(file){
         console.log("read file: " + file);
         var stat = filesystem.statSync(file);
+        //content is a long string of everything in the file
         var content = filesystem.readFileSync(file);
 
         //the format of artID: Pa-Lb-Cc
@@ -86,7 +87,7 @@ app.get('/commit', (req, res) =>{
         count++;
 
         //step 5: save to the manifest file
-        
+
     });
 
 });
