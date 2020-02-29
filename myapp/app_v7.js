@@ -141,7 +141,7 @@ app.get('/commit', (req, res) =>{
         filesystem.writeFileSync(path.join(repoPath, artID), content);
 
             //step 5: save to the manifest file
-
+            //create a date
             var today = new Date().toLocaleDateString(undefined,{
                 day: '2-digit',
                 month: '2-digit',
@@ -149,7 +149,7 @@ app.get('/commit', (req, res) =>{
                 hour: '2-digit',
                 minute: '2-digit',
             })
-
+            today = today.replace(',','');
             filesystem.appendFile(manLocation, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
                 if (err) throw err;
                 console.log('Saved!');
