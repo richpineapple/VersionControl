@@ -56,6 +56,24 @@ app.get('/commit', (req, res) =>{
     var projectBaseFolder = path.basename(userInput);
 
 
+    console.log("the user base folder: " + projectBaseFolder);
+    var serverProjectFolder = path.join(repoPath, projectBaseFolder);
+    //create the project folder in the server side
+
+    //FIXME: change the path the files save to, especially the .man page
+    filesystem.access(serverProjectFolder, (err) =>{
+        if(err)
+        {
+            console.log("++++++++++created folder in server: " + serverProjectFolder);
+            filesystem.mkdirSync(serverProjectFolder);
+            return;
+        }
+
+        console.log("-----------folder existed: " + serverProjectFolder);
+
+    });
+
+
     //call the scan function, and get the result list, all paths
     var results =  _getAllFilesFromFolder(userInput);
 
