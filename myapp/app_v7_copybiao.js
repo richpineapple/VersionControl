@@ -14,6 +14,10 @@ const currentFilePath = path.join(__dirname + "/");
 const repoPath = path.join(__dirname + "/repos/");
 const version = 7;
 
+app.get('commitall', (req, res) => {
+    //when user hit commit all, do all the commit for all the past input history
+});
+
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
     //date and time for names
