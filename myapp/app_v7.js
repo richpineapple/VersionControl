@@ -170,7 +170,8 @@ app.get('/commit', (req, res) =>{
         filesystem.writeFileSync(path.join(targetPath, artID), content);
 
         //step 5: save to the manifest file
-        var manifestRecord = artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n";
+        var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
+        var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today + commandRecord+"\n";
         setTimeout(appendToFile, 1500, manLocation, manifestRecord);
 
     });
