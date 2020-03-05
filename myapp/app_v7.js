@@ -15,12 +15,30 @@ const repoPath = path.join(__dirname + "/repos/");
 const version = 7;
 
 
-app.get('createRepo', (req, res)=>{
+//create repo
+app.get('/createrepo',(req,res)=>{
+    res.sendFile(htmlsFolder + "CreateRepo.html");
+    var sourcePath = req.query.sourcePath;
+    var targetPath = req.query.targetPath;
 
+
+    console.log("First Input: "+ source + " Second Input: "+ target);
 });
 
+//FIXME: second commit's change not showing up in the manifest file
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
+    //now we get 2 user input
+    res.sendFile(htmlsFolder + "CreateRepo.html");
+    var sourcePath = req.query.sourcePath;
+    var targetPath = req.query.targetPath;
+
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!sourcePath || !targetPath){
+        return;
+    }
+
     //date and time for names
 
     var manCounter = new Date();
@@ -28,9 +46,8 @@ app.get('/commit', (req, res) =>{
     var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
 
-    //var location = path.join(__dirname + "/repos/.manifest.txt");
-    //var manLocation = path.join(__dirname + "/repos/.manifest.txt");
-    var manLocation = path.join(__dirname, path.join("/repos/", manFileName));
+    //var manLocation = path.join(__dirname, path.join("/repos/", manFileName));
+    var manLocation = path.join(targetPath, manFileName);
     console.log("the manLocation: " + manLocation);
     //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
@@ -43,47 +60,20 @@ app.get('/commit', (req, res) =>{
     });
 
 
-    res.sendFile(htmlsFolder + "getPathInput.html");
-    //getting user input from the html user input box
-    var userInput = req.query.myInputBox;
-
-    //this line is important, because when first loaded, the code will
-    //wait for user input and code will keep running, which is not wanted
-    if(!userInput){
-        return;
-    }
-
-    //fixme delete later
-    console.log("the input: " + userInput);
-    //var temp = userInput.split('\\');
-    //console.log("the userinput basename: " + path.basename(userInput));
-    var projectBaseFolder = path.basename(userInput);
 
 
-    console.log("the user base folder: " + projectBaseFolder);
-    var serverProjectFolder = path.join(repoPath, projectBaseFolder);
-    //create the project folder in the server side
+    var sourceBaseFolder = path.basename(sourcePath);
 
-    //FIXME: change the path the files save to, especially the .man page
-    filesystem.access(serverProjectFolder, (err) =>{
-        if(err)
-        {
-            console.log("++++++++++created folder in server: " + serverProjectFolder);
-            filesystem.mkdirSync(serverProjectFolder);
-            return;
-        }
 
-        console.log("-----------folder existed: " + serverProjectFolder);
-
-    });
 
 
     //call the scan function, and get the result list, all paths
-    var results =  _getAllFilesFromFolder(userInput);
+    var results =  _getAllFilesFromFolder(sourcePath);
 
     //get what files we already have in the repo part, for comparsion later
     //var repoFiles = _getAllFilesFromFolder(repoPath);
-    var repoFileNames = getAllBaseName(repoPath);
+    //var repoFileNames = getAllBaseName(repoPath);
+    var targetFileNames = getAllBaseName(targetPath);
 
 
     console.log("finished the search..");
@@ -111,7 +101,7 @@ app.get('/commit', (req, res) =>{
 
         //the relative path starts from the project folder name..
         for(let idx = 0; idx < filePathList.length; idx++ ){
-            if (filePathList[idx] === projectBaseFolder){
+            if (filePathList[idx] === sourceBaseFolder){
                 relativePathList = filePathList.slice(idx);
                 break;
             }
@@ -160,8 +150,11 @@ app.get('/commit', (req, res) =>{
 
         //step 4: do comparsion before try to save to the server
         //var repeated = false;
-        for(let idx = 0; idx < repoFileNames.length; idx++){
-            if(repoFileNames[idx] === artID){
+        //for(let idx = 0; idx < repoFileNames.length; idx++){
+        for(let idx = 0; idx < targetFileNames.length; idx++){
+            //if(repoFileNames[idx] === artID){
+            if(targetFileNames[idx] === artID){
+
                 console.log("name repeated..");
                 return;
                 //repeated = true;
@@ -181,7 +174,8 @@ app.get('/commit', (req, res) =>{
         //then do the save
         //if(!repeated){
         console.log("try to save to repo: " + file);
-        filesystem.writeFileSync(path.join(repoPath, artID), content);
+        //filesystem.writeFileSync(path.join(repoPath, artID), content);
+        filesystem.writeFileSync(path.join(targetPath, artID), content);
 
             //step 5: save to the manifest file
             //create a date
@@ -194,7 +188,7 @@ app.get('/commit', (req, res) =>{
 
 
     //save copy of .man to the user project root folder
-    setTimeout(copyFileTo, 3000, manLocation, path.join(userInput, manFileName));
+    setTimeout(copyFileTo, 3000, manLocation, path.join(sourcePath, manFileName));
 
 });
 
