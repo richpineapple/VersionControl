@@ -14,11 +14,27 @@ const currentFilePath = path.join(__dirname + "/");
 const repoPath = path.join(__dirname + "/repos/");
 const version = 7;
 
+//create repo
+app.get('/createrepo',(req,res)=>{
+    res.sendFile(htmlsFolder + "CreateRepo.html");
+    var source = req.query.sourcePath;
+    var target = req.query.targetPath;
+    console.log("First Input: "+ source + " Second Input: "+ target);
+});
+
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
+    //date and time for names
+
+    var manCounter = new Date();
+
+    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+
+
     //var location = path.join(__dirname + "/repos/.manifest.txt");
-    var counter = 0;
-    var manLocation = path.join(__dirname + "/repos/.manifest"+counter+".rc");
+    //var manLocation = path.join(__dirname + "/repos/.manifest.txt");
+    var manLocation = path.join(__dirname, path.join("/repos/", manFileName));
+    console.log("the manLocation: " + manLocation);
     //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
@@ -47,7 +63,25 @@ app.get('/commit', (req, res) =>{
     var projectBaseFolder = path.basename(userInput);
 
 
-    //call the scan function, and get the result list
+    console.log("the user base folder: " + projectBaseFolder);
+    var serverProjectFolder = path.join(repoPath, projectBaseFolder);
+    //create the project folder in the server side
+
+    //FIXME: change the path the files save to, especially the .man page
+    filesystem.access(serverProjectFolder, (err) =>{
+        if(err)
+        {
+            console.log("++++++++++created folder in server: " + serverProjectFolder);
+            filesystem.mkdirSync(serverProjectFolder);
+            return;
+        }
+
+        console.log("-----------folder existed: " + serverProjectFolder);
+
+    });
+
+
+    //call the scan function, and get the result list, all paths
     var results =  _getAllFilesFromFolder(userInput);
 
     //get what files we already have in the repo part, for comparsion later
@@ -118,6 +152,8 @@ app.get('/commit', (req, res) =>{
             contentCount = contentCount + content.charCodeAt(idx) * checkSumNumLoop[idx% checkSumNumLoop.length];
 
         }
+        //makes sure contentCount does not pass 4 places
+        contentCount = contentCount%10000;
         artID = artID + "C" + contentCount;
 
         //make sure they have the origianl extension
@@ -136,6 +172,15 @@ app.get('/commit', (req, res) =>{
             }
         }
 
+        var today = new Date().toLocaleDateString(undefined,{
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+        today = today.replace(',','');
+
         //then do the save
         //if(!repeated){
         console.log("try to save to repo: " + file);
@@ -143,16 +188,6 @@ app.get('/commit', (req, res) =>{
 
             //step 5: save to the manifest file
             //create a date
-            var today = new Date().toLocaleDateString(undefined,{
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            })
-            var date = new Date();
-            var deeto = 
-            today = today.replace(',','');
             filesystem.appendFile(manLocation, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
                 if (err) throw err;
                 console.log('Saved!');
@@ -160,7 +195,20 @@ app.get('/commit', (req, res) =>{
 
     });
 
+
+    //save copy of .man to the user project root folder
+    setTimeout(copyFileTo, 3000, manLocation, path.join(userInput, manFileName));
+
 });
+
+var copyFileTo = function(from, to){
+
+    filesystem.copyFile(from, to, (err) => {
+        if(err) throw err;
+        console.log("copied " + from + " , to " + to );
+
+    });
+};
 
 
 //potential code to accept user input
@@ -297,7 +345,9 @@ var saveFileToServer = function(absFilePath, projectPath){
 };
 
 
-
+app.get('/main', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
+});
 
 //don't remove this line, it keeps the the listening to the port, not let the app to end
 app.listen(port, () => console.log(`version ${version}: listen to port : ${port}`));
