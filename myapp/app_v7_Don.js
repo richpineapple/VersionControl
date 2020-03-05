@@ -17,8 +17,8 @@ const version = 7;
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
     //var location = path.join(__dirname + "/repos/.manifest.txt");
-
-    var manLocation = path.join(__dirname + "/repos/.manifest.rc");
+    var counter = 0;
+    var manLocation = path.join(__dirname + "/repos/.manifest"+counter+".rc");
     //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
@@ -47,7 +47,7 @@ app.get('/commit', (req, res) =>{
     var projectBaseFolder = path.basename(userInput);
 
 
-    //call the scan function, and get the result list, all paths
+    //call the scan function, and get the result list
     var results =  _getAllFilesFromFolder(userInput);
 
     //get what files we already have in the repo part, for comparsion later
@@ -150,6 +150,8 @@ app.get('/commit', (req, res) =>{
                 hour: '2-digit',
                 minute: '2-digit',
             })
+            var date = new Date();
+            var deeto = 
             today = today.replace(',','');
             filesystem.appendFile(manLocation, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
                 if (err) throw err;
@@ -218,7 +220,9 @@ app.get('/getpathinput', (req, res) =>{
 
 
 //root
-app.get('/', (req, res) => res.send("hello world, version " + version));
+app.get('/', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
+});
 
 //the url that user can upload file(s)
 // http://localhost:3000/upload
@@ -293,9 +297,7 @@ var saveFileToServer = function(absFilePath, projectPath){
 };
 
 
-app.get('/main', function(req, res){
-    res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
-});
+
 
 //don't remove this line, it keeps the the listening to the port, not let the app to end
 app.listen(port, () => console.log(`version ${version}: listen to port : ${port}`));
