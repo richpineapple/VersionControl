@@ -14,11 +14,20 @@ const currentFilePath = path.join(__dirname + "/");
 const repoPath = path.join(__dirname + "/repos/");
 const version = 7;
 
+
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
-    //var location = path.join(__dirname + "/repos/.manifest.txt");
+    //date and time for names
 
-    var manLocation = path.join(__dirname + "/repos/.manifest.rc");
+    var manCounter = new Date();
+
+    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+
+
+    //var location = path.join(__dirname + "/repos/.manifest.txt");
+    //var manLocation = path.join(__dirname + "/repos/.manifest.txt");
+    var manLocation = path.join(__dirname, path.join("/repos/", manFileName));
+    console.log("the manLocation: " + manLocation);
     //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
@@ -136,6 +145,15 @@ app.get('/commit', (req, res) =>{
             }
         }
 
+        var today = new Date().toLocaleDateString(undefined,{
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+        today = today.replace(',','');
+
         //then do the save
         //if(!repeated){
         console.log("try to save to repo: " + file);
@@ -143,14 +161,6 @@ app.get('/commit', (req, res) =>{
 
             //step 5: save to the manifest file
             //create a date
-            var today = new Date().toLocaleDateString(undefined,{
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            })
-            today = today.replace(',','');
             filesystem.appendFile(manLocation, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
                 if (err) throw err;
                 console.log('Saved!');
@@ -159,7 +169,6 @@ app.get('/commit', (req, res) =>{
     });
 
 });
-
 
 //potential code to accept user input
 app.get('/getpathinput', (req, res) =>{
