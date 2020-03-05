@@ -39,29 +39,33 @@ app.get('/commit', (req, res) =>{
         return;
     }
 
-    //date and time for names
+    //check if both path are valid..
+    if (!filesystem.existsSync(sourcePath) || !filesystem.existsSync(targetPath)){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
 
+    }
+
+    //date and time for names for .man file
     var manCounter = new Date();
-
     var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
-
-    //var manLocation = path.join(__dirname, path.join("/repos/", manFileName));
     var manLocation = path.join(targetPath, manFileName);
-    console.log("the manLocation: " + manLocation);
+
     //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
         {
-            filesystem.writeFile(manLocation, "", (err) =>{
-                console.log("finished creating");
-            });
+            filesystem.writeFileSync(manLocation, "");
+            console.log("finished creating man file: " + manFileName);
         }
     });
 
 
-
-
+    //get the base folder of the sourcePath, because the .man record
+    //need to use it as the starting folder in the relative path
     var sourceBaseFolder = path.basename(sourcePath);
 
 
@@ -70,20 +74,26 @@ app.get('/commit', (req, res) =>{
     //call the scan function, and get the result list, all paths
     var results =  _getAllFilesFromFolder(sourcePath);
 
-    //get what files we already have in the repo part, for comparsion later
-    //var repoFiles = _getAllFilesFromFolder(repoPath);
-    //var repoFileNames = getAllBaseName(repoPath);
+    //get what files we already have in the repo part, for comparsion (check repeat) later
     var targetFileNames = getAllBaseName(targetPath);
-
 
     console.log("finished the search..");
 
-    //temp variable
+    //used for calculating the ArtID
     var count = 0;
-
     var checkSumNumLoop = [1, 7, 3, 11];
 
-    //loop over the files according to all the file paths
+    //date and time for .man file records
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
+
+    //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
         //ignore dot files
         if (path.basename(file).charAt(0) === "."){
@@ -117,13 +127,11 @@ app.get('/commit', (req, res) =>{
 
 
         //the format of artID: Pa-Lb-Cc
-        //var artID = "testFile_" + count;
         var artID = "";
 
         //step 1: do the path sum
         var pathCount = 0;
         for(let idx = 0; idx < relativePathStr.length; idx++){
-            //console.log("current char: " + relativePathStr.charAt(idx) + ": " + relativePathStr.charCodeAt(idx));
             pathCount = pathCount + relativePathStr.charCodeAt(idx) * checkSumNumLoop[idx % checkSumNumLoop.length];
         }
         artID = artID + "P" + pathCount + "-";
@@ -149,40 +157,21 @@ app.get('/commit', (req, res) =>{
 
 
         //step 4: do comparsion before try to save to the server
-        //var repeated = false;
-        //for(let idx = 0; idx < repoFileNames.length; idx++){
         for(let idx = 0; idx < targetFileNames.length; idx++){
-            //if(repoFileNames[idx] === artID){
             if(targetFileNames[idx] === artID){
-
                 console.log("name repeated..");
                 return;
-                //repeated = true;
-                //break;
             }
         }
 
-        var today = new Date().toLocaleDateString(undefined,{
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        })
-        today = today.replace(',','');
 
-        //then do the save
-        //if(!repeated){
+        //then do the save, copy file from source to the target folder with as file with new ARTID name
         console.log("try to save to repo: " + file);
-        //filesystem.writeFileSync(path.join(repoPath, artID), content);
         filesystem.writeFileSync(path.join(targetPath, artID), content);
 
-            //step 5: save to the manifest file
-            //create a date
-            filesystem.appendFile(manLocation, artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n", function (err) {
-                if (err) throw err;
-                console.log('Saved!');
-            });
+        //step 5: save to the manifest file
+        var manifestRecord = artID + "\t"+ relativePathStr+"\t"+"Commit\t"+today+"\n";
+        setTimeout(appendToFile, 1500, manLocation, manifestRecord);
 
     });
 
@@ -192,6 +181,19 @@ app.get('/commit', (req, res) =>{
 
 });
 
+//should work with setTimeOut, save file in a slower manner, so the file to save to
+//will eventually exist
+var appendToFile = function(filePath, content){
+    filesystem.appendFile(filePath, content, function (err) {
+        console.log("recording manRecord: " + content);
+        if (err) throw err;
+        console.log('Saved!');
+    });
+
+};
+
+//should work with setTimeOut, copy file in a slower manner,
+//so the file will be updated and will keep copying after main loop exit
 var copyFileTo = function(from, to){
 
     filesystem.copyFile(from, to, (err) => {
@@ -247,12 +249,6 @@ var _getAllFilesFromFolder = function(dir) {
 
 };
 
-//becase the path sum is the relative path, so we need to know where is the starting point
-//in this case , the starting point should be current Project paths
-//different projects will have different starting points
-var saveFileToServer = function(absFilePath, projectPath){
-    //do we save and calculate the art ID at the same time so we don't go over the same file twice
-};
 
 
 app.get('/main', function(req, res){
