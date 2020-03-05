@@ -229,7 +229,9 @@ app.get('/getpathinput', (req, res) =>{
 
 
 //root
-app.get('/', (req, res) => res.send("hello world, version " + version));
+app.get('/', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
+});
 
 //the url that user can upload file(s)
 // http://localhost:3000/upload
