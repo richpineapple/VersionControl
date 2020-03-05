@@ -170,7 +170,21 @@ app.get('/commit', (req, res) =>{
 
     });
 
+
+    //save copy of .man to the user project root folder
+    setTimeout(copyFileTo, 3000, manLocation, path.join(userInput, manFileName));
+
 });
+
+var copyFileTo = function(from, to){
+
+    filesystem.copyFile(from, to, (err) => {
+        if(err) throw err;
+        console.log("copied " + from + " , to " + to );
+
+    });
+};
+
 
 //potential code to accept user input
 app.get('/getpathinput', (req, res) =>{
