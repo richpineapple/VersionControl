@@ -127,6 +127,8 @@ app.get('/commit', (req, res) =>{
             contentCount = contentCount + content.charCodeAt(idx) * checkSumNumLoop[idx% checkSumNumLoop.length];
 
         }
+        //makes sure contentCount does not pass 4 places
+        contentCount = contentCount%10000;
         artID = artID + "C" + contentCount;
 
         //make sure they have the origianl extension

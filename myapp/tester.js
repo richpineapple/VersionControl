@@ -1,16 +1,17 @@
 const fs = require('fs');
+
+var gogo = true;
 var hello = 0;
-const dir = 'C:/Users/Donald/Desktop/testJava/hello'+hello;
-boolean gogo = True;
-while(go)
+while(gogo)
 {
-    try{
-        if(!fs.existsSync(dir)){
+    const dir = 'C:/Users/Donald/Desktop/testJava/hello'+hello;
+    if(!fs.existsSync(dir)){
             fs.mkdirSync(dir); 
             console.log('File Created!');
-        }
+            gogo = false;
+    
     }
-    catch (err)
+    else
     {
         console.log('File Exists!');
         hello++;
