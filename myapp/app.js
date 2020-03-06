@@ -1,9 +1,11 @@
-/* Authors: Brian Tran, Donovan Lee, Biao Chen
-   Contact Info: siweisijiao.weebly@gmail.com
-                  donovan10599@gmail.com
-                  briant7234@gmail.com
-   File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo. 
-   There are functions that calculate the Artificial ID.
+/* 
+Authors     :   Contact Info
+Brian Tran  :   briant7234@gmail.com
+Donovan Lee :   donovan10599@gmail.com
+Biao Chen   :   siweisijiao.weebly@gmail.com
+    
+File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo. 
+There are functions that calculate the Artificial ID.
 */
 const express = require('express');
 const app = express();
