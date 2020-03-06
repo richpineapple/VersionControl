@@ -1,5 +1,11 @@
+--Class Name:
+    CECS 343 : Intro To Software Engineering
+    Section 03/4
+--Professor:
+    Charles Siska
 
-# CECS343_VersionControl
+--Project Name:
+    CECS343_VersionControl
  create version control tool,
  required packages:  
  1. express.js
