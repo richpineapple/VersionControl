@@ -54,14 +54,6 @@ app.get('/commit', (req, res) =>{
 
     var manLocation = path.join(targetPath, manFileName);
 
-    //check if manifest file exist, if not, create it
-    filesystem.access(manLocation, (err) =>{
-        if(err)
-        {
-            filesystem.writeFileSync(manLocation, "");
-            console.log("finished creating man file: " + manFileName);
-        }
-    });
 
 
     //get the base folder of the sourcePath, because the .man record
@@ -93,6 +85,7 @@ app.get('/commit', (req, res) =>{
     })
     today = today.replace(',','');
 
+    var overallManRecord = "";
     //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
         //ignore dot files
@@ -172,13 +165,30 @@ app.get('/commit', (req, res) =>{
         //step 5: save to the manifest file
         var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
         var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today + commandRecord+"\n";
-        setTimeout(appendToFile, 1500, manLocation, manifestRecord);
 
+        //save all the man command to one String, and save this string later
+        overallManRecord += manifestRecord;
+    });
+
+    //check if manifest file exist, if not, create it
+    filesystem.access(manLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(manLocation, overallManRecord, (err)=>{
+                if(err){
+                    console.log("save overallManRecord failed..: " + err);
+                    return;
+                };
+
+
+                //save all the man records at this snapshot
+                console.log("finished creating man file: " + manFileName);
+                copyFileTo(manLocation, path.join(sourcePath, manFileName));
+            });
+        }
     });
 
 
-    //save copy of .man to the user project root folder
-    setTimeout(copyFileTo, 3000, manLocation, path.join(sourcePath, manFileName));
 
 });
 
