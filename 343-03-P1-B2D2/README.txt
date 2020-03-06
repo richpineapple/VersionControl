@@ -36,13 +36,6 @@ MainPage.html
 express.js
 node.js
 
-<<<<<<< HEAD
-=======
-
-
-
-
->>>>>>> parent of 369060f... Merge branch 'master' of https://github.com/lazytosay/CECS343_VersionControl
 --Setup and Installation--
 Setup and install Node.js (window)
 Download Node.js:  https://nodejs.org/en/
