@@ -6,12 +6,6 @@ Biao Chen   :   siweisijiao.weebly@gmail.com
     
 File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo. 
 There are functions that calculate the Artificial ID.
-/* Authors: Brian Tran, Donovan Lee, Biao Chen
-   Contact Info: siweisijiao.weebly@gmail.com
-                  donovan10599@gmail.com
-                  briant7234@gmail.com
-   File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo.
-   There are functions that calculate the Artificial ID.
 */
 const express = require('express');
 const app = express();
@@ -22,11 +16,24 @@ const path = require("path");
 
 const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
-const version = 8;
+const helperFilesFolder = path.join(__dirname, "helperFiles/");
+const currentFilePath = path.join(__dirname + "/");
+const repoPath = path.join(__dirname + "/repos/");
+const version = 7;
 
 
+//create repo
+app.get('/createrepo',(req,res)=>{
+    res.sendFile(htmlsFolder + "CreateRepo.html");
+    var sourcePath = req.query.sourcePath;
+    var targetPath = req.query.targetPath;
 
-//if first time, it will be create the repo
+
+    console.log("First Input: "+ source + " Second Input: "+ target);
+});
+
+//FIXME: second commit's change not showing up in the manifest file
+//now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
     //now we get 2 user input
     res.sendFile(htmlsFolder + "CreateRepo.html");
@@ -64,7 +71,7 @@ app.get('/commit', (req, res) =>{
 
 
     //call the scan function, and get the result list, all paths
-    var results =  getAllFilesFromFolder(sourcePath);
+    var results =  _getAllFilesFromFolder(sourcePath);
 
     //get what files we already have in the repo part, for comparsion (check repeat) later
     var targetFileNames = getAllBaseName(targetPath);
@@ -224,7 +231,7 @@ app.get('/', function(req, res){
 
 
 var getAllBaseName = function(dir){
-    var allFilesPath = getAllFilesFromFolder(dir);
+    var allFilesPath = _getAllFilesFromFolder(dir);
     var allBaseNames = [];
     allFilesPath.forEach(function(filePath){
         allBaseNames.push(path.basename(filePath));
@@ -235,7 +242,7 @@ var getAllBaseName = function(dir){
 
 
 //do the scan part
-var getAllFilesFromFolder = function(dir) {
+var _getAllFilesFromFolder = function(dir) {
     //the in searching path, the last element should be the project base folder
     var results = [];
 
@@ -246,7 +253,7 @@ var getAllFilesFromFolder = function(dir) {
             var stat = filesystem.statSync(file);
 
             if (stat && stat.isDirectory()) {
-                results = results.concat(getAllFilesFromFolder(file));
+                results = results.concat(_getAllFilesFromFolder(file))
             } else results.push(file);
 
         });
