@@ -1,10 +1,10 @@
-/* 
+/*
 Authors     :   Contact Info
 Brian Tran  :   briant7234@gmail.com
 Donovan Lee :   donovan10599@gmail.com
 Biao Chen   :   siweisijiao.weebly@gmail.com
-    
-File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo. 
+
+File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo.
 There are functions that calculate the Artificial ID.
 */
 const express = require('express');
@@ -63,11 +63,17 @@ app.get('/createrepo', (req, res) =>{
     //get what files we already have in the repo part, for comparsion (check repeat) later
     var targetFileNames = getAllBaseName(targetPath);
 
+    //don't do anything is the target folder is not empty
+    if(targetFileNames.length > 0){
+        console.log("the target folder is not empty..." + targetFileNames.length);
+        res.send("the target folder is not empty...");
+        return;
+    }
+
     console.log("finished the search..");
 
     //used for calculating the ArtID
     var count = 0;
-    var checkSumNumLoop = [1, 7, 3, 11];
 
     //date and time for .man file records
     var today = new Date().toLocaleDateString(undefined,{
@@ -82,86 +88,8 @@ app.get('/createrepo', (req, res) =>{
     var overallManRecord = "";
     //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
-        //ignore dot files
-        if (path.basename(file).charAt(0) === "."){
-            console.log("file is dot file: " + file);
-            return;
-        }
-
-        var stat = filesystem.statSync(file);
-        //content is a long string of everything in the file
-        var content = String(filesystem.readFileSync(file));
-
-        var filePathList = file.split("\\");
-
-        var relativePathList = [];
-
-        //the relative path starts from the project folder name..
-        for(let idx = 0; idx < filePathList.length; idx++ ){
-            if (filePathList[idx] === sourceBaseFolder){
-                relativePathList = filePathList.slice(idx);
-                break;
-            }
-        };
-
-        //this is for the path count part
-        var relativePathStr = "";
-        relativePathList.forEach(function(pathPart){
-            relativePathStr = path.join(relativePathStr, pathPart);
-        });
-
-        console.log("the relative path: " + relativePathStr);
-
-
-        //the format of artID: Pa-Lb-Cc
-        var artID = "";
-
-        //step 1: do the path sum
-        var pathCount = 0;
-        for(let idx = 0; idx < relativePathStr.length; idx++){
-            pathCount = pathCount + relativePathStr.charCodeAt(idx) * checkSumNumLoop[idx % checkSumNumLoop.length];
-        }
-        artID = artID + "P" + pathCount + "-";
-
-        //step 2: the length for the artID
-        var sizeCount = stat.size;
-        artID = artID + "L" + sizeCount + "-";
-
-        //FIXME: step 3: calculate the c for artID here
-
-        var contentCount = 0;
-        for(let idx = 0; idx < content.length; idx++){
-            contentCount = contentCount + content.charCodeAt(idx) * checkSumNumLoop[idx% checkSumNumLoop.length];
-
-        }
-        //makes sure contentCount does not pass 4 places
-        contentCount = contentCount%10000;
-        artID = artID + "C" + contentCount;
-
-        //make sure they have the origianl extension
-        var origianlExtension = path.basename(file).split(".").pop();
-        artID = artID + "." + origianlExtension;
-
-
-        //step 4: do comparsion before try to save to the server
-        for(let idx = 0; idx < targetFileNames.length; idx++){
-            if(targetFileNames[idx] === artID){
-                console.log("name repeated..");
-                return;
-            }
-        }
-
-
-        //then do the save, copy file from source to the target folder with as file with new ARTID name
-        console.log("try to save to repo: " + file);
-        filesystem.writeFileSync(path.join(targetPath, artID), content);
-
-        //step 5: save to the manifest file
-        var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
-        var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today + commandRecord+"\n";
-
-        //save all the man command to one String, and save this string later
-        overallManRecord += manifestRecord;
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today);
+        overallManRecord += oneManRecord;
     });
 
     //check if manifest file exist, if not, create it
@@ -185,6 +113,98 @@ app.get('/createrepo', (req, res) =>{
 
 
 });
+
+
+var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today){
+    var checkSumNumLoop = [1, 7, 3, 11];
+    //ignore dot files
+    if (path.basename(file).charAt(0) === "."){
+        console.log("file is dot file: " + file);
+        return "";
+    }
+
+    var stat = filesystem.statSync(file);
+    //content is a long string of everything in the file
+    var content = String(filesystem.readFileSync(file));
+
+    var filePathList = file.split("\\");
+
+    var relativePathList = [];
+
+    //the relative path starts from the project folder name..
+    for(let idx = 0; idx < filePathList.length; idx++ ){
+        if (filePathList[idx] === sourceBaseFolder){
+            relativePathList = filePathList.slice(idx);
+            break;
+        }
+    };
+
+    //this is for the path count part
+    var relativePathStr = "";
+    relativePathList.forEach(function(pathPart){
+        relativePathStr = path.join(relativePathStr, pathPart);
+    });
+
+    console.log("the relative path: " + relativePathStr);
+
+
+    //the format of artID: Pa-Lb-Cc
+    var artID = "";
+
+    //step 1: do the path sum
+    var pathCount = 0;
+    for(let idx = 0; idx < relativePathStr.length; idx++){
+        pathCount = pathCount + relativePathStr.charCodeAt(idx) * checkSumNumLoop[idx % checkSumNumLoop.length];
+    }
+    artID = artID + "P" + pathCount + "-";
+
+    //step 2: the length for the artID
+    var sizeCount = stat.size;
+    artID = artID + "L" + sizeCount + "-";
+
+    //FIXME: step 3: calculate the c for artID here
+
+    var contentCount = 0;
+    for(let idx = 0; idx < content.length; idx++){
+        contentCount = contentCount + content.charCodeAt(idx) * checkSumNumLoop[idx% checkSumNumLoop.length];
+
+    }
+    //makes sure contentCount does not pass 4 places
+    contentCount = contentCount%10000;
+    artID = artID + "C" + contentCount;
+
+    //make sure they have the origianl extension
+    var origianlExtension = path.basename(file).split(".").pop();
+    artID = artID + "." + origianlExtension;
+
+
+    /*
+    //step 4: do comparsion before try to save to the server
+    for(let idx = 0; idx < targetFileNames.length; idx++){
+        if(targetFileNames[idx] === artID){
+            console.log("name repeated..");
+            return;
+        }
+    }
+    */
+
+
+    //then do the save, copy file from source to the target folder with as file with new ARTID name
+    console.log("try to save to repo: " + file);
+    filesystem.writeFileSync(path.join(targetPath, artID), content);
+
+    //step 5: save to the manifest file
+    var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
+    var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today + commandRecord+"\n";
+
+    //save all the man command to one String, and save this string later
+    //overallManRecord += manifestRecord;
+
+    //return this one record
+    return manifestRecord;
+
+};
+
 
 //should work with setTimeOut, save file in a slower manner, so the file to save to
 //will eventually exist
