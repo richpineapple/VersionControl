@@ -36,7 +36,7 @@ app.get('/createrepo',(req,res)=>{
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
     //now we get 2 user input
-    res.sendFile(htmlsFolder + "CreateRepo.html");
+    res.sendFile(htmlsFolder + "checkIn.html");
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
 

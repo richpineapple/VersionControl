@@ -18,6 +18,89 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const version = 8;
 
+app.get('/checkin', (req, res) =>{
+    //now we get 2 user input
+    res.sendFile(htmlsFolder + "checkin.html");
+    var sourcePath = req.query.sourcePath;
+    var targetPath = req.query.targetPath;
+
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!sourcePath || !targetPath){
+        return ;
+    }
+
+    //check if both path are valid..
+    if (!filesystem.existsSync(sourcePath) || !filesystem.existsSync(targetPath)){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
+
+    }
+
+    //date and time for names for .man file
+    var manCounter = new Date();
+    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+
+    var manLocation = path.join(targetPath, manFileName);
+
+
+
+    //get the base folder of the sourcePath, because the .man record
+    //need to use it as the starting folder in the relative path
+    var sourceBaseFolder = path.basename(sourcePath);
+
+
+
+
+    //call the scan function, and get the result list, all paths
+    var results =  getAllFilesFromFolder(sourcePath);
+
+
+    console.log("finished the search..");
+
+    //used for calculating the ArtID
+
+    //date and time for .man file records
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
+
+    var overallManRecord = "";
+    //loop over all the filePath in the sourcePath, one at a time
+    results.forEach(function(file){
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin");
+        overallManRecord += oneManRecord;
+    });
+
+    //check if manifest file exist, if not, create it
+    filesystem.access(manLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(manLocation, overallManRecord, (err)=>{
+                if(err){
+                    console.log("save overallManRecord failed..: " + err);
+                    return;
+                };
+
+
+                //save all the man records at this snapshot
+                console.log("finished creating man file: " + manFileName);
+                copyFileTo(manLocation, path.join(sourcePath, manFileName));
+            });
+        }
+    });
+
+
+
+});
+
 
 
 //if first time, it will be create the repo
@@ -88,7 +171,7 @@ app.get('/createrepo', (req, res) =>{
     var overallManRecord = "";
     //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
-        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today);
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, createrepo);
         overallManRecord += oneManRecord;
     });
 
@@ -115,7 +198,7 @@ app.get('/createrepo', (req, res) =>{
 });
 
 
-var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today){
+var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
     var checkSumNumLoop = [1, 7, 3, 11];
     //ignore dot files
     if (path.basename(file).charAt(0) === "."){
@@ -194,7 +277,8 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today){
     filesystem.writeFileSync(path.join(targetPath, artID), content);
 
     //step 5: save to the manifest file
-    var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
+    //var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
+    var commandRecord = " " + command +"(" + file + ", " + path.join(targetPath, artID) + ") ";
     var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today + commandRecord+"\n";
 
     //save all the man command to one String, and save this string later
@@ -246,6 +330,7 @@ var getAllBaseName = function(dir){
 
     return allBaseNames;
 };
+
 
 
 //do the scan part
