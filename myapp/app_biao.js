@@ -18,9 +18,101 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const version = 8;
 
+//copy files according the .man file
+app.get('/checkout', (req, res) =>{
+    //now we get 2 user input
+    res.sendFile(htmlsFolder + "checkOut.html");
+    var sourceManFile = req.query.sourceManFile;
+    var targetPath = req.query.targetPath;
+
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!sourceManFile || !targetPath){
+        return ;
+    }
+
+    var sourceManPath = path.join(__dirname, sourceManFile);
+
+    //check if both path are valid..
+    if (!filesystem.existsSync(sourceManPath) || !filesystem.existsSync(targetPath)){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
+
+    }
+
+    //date and time for names for .man file
+    var manCounter = new Date();
+    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+
+    //var manLocation = path.join(targetPath, manFileName);
+    //FIXME: remeber to copy to target folder
+    var resultManPath = path.join(__dirname, manFileName);
+
+
+
+    //get the base folder of the sourcePath, because the .man record
+    //need to use it as the starting folder in the relative path
+    var sourceBaseFolder = path.basename(sourcePath);
+
+    console.log("the source base folder: " + sourceBaseFolder);
+
+
+
+
+    /*
+    //call the scan function, and get the result list, all paths
+    var results =  getAllFilesFromFolder(sourcePath);
+
+
+    console.log("finished the search..");
+
+    //used for calculating the ArtID
+
+    //date and time for .man file records
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
+
+    var overallManRecord = "";
+    //loop over all the filePath in the sourcePath, one at a time
+    results.forEach(function(file){
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin");
+        overallManRecord += oneManRecord;
+    });
+
+    //check if manifest file exist, if not, create it
+    filesystem.access(manLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(manLocation, overallManRecord, (err)=>{
+                if(err){
+                    console.log("save overallManRecord failed..: " + err);
+                    return;
+                };
+
+
+                //save all the man records at this snapshot
+                console.log("finished creating man file: " + manFileName);
+                copyFileTo(manLocation, path.join(sourcePath, manFileName));
+            });
+        }
+    });
+
+
+    */
+
+});
+
 app.get('/checkin', (req, res) =>{
     //now we get 2 user input
-    res.sendFile(htmlsFolder + "checkin.html");
+    res.sendFile(htmlsFolder + "checkIn.html");
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
 
