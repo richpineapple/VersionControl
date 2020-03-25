@@ -175,7 +175,7 @@ app.get('/createrepo', (req, res) =>{
         overallManRecord += oneManRecord;
     });
 
-    //check if manifest file exist, if not, create it
+    //check if manifest file exist, if not, create it, and append the commands
     filesystem.access(manLocation, (err) =>{
         if(err)
         {
@@ -197,7 +197,7 @@ app.get('/createrepo', (req, res) =>{
 
 });
 
-
+//calculate the artID and then save to  target folder
 var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
     var checkSumNumLoop = [1, 7, 3, 11];
     //ignore dot files
