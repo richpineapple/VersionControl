@@ -37,8 +37,22 @@ app.get('/test', function(req, res){
     //only want the name of the files, not the path
     var baseNames = getAllBaseName(repoPath);
 
+
+
+    /*
+     for line in read(.manlabels.txt):
+        lineList = line.split(" ");
+        var tempmanName = lineList[0]
+        var templabels = lineList[1].split(",")
+    */
+    var tempmanname = ".tempman";
+    var templabels = ['label1', 'label2', 'label100'];
+
     //the "students.ejs" should already be in the views folder
-    res.render('students', {students: baseNames});
+    //res.render('students', {students: baseNames});
+    //res.render('students', {students: templabels});
+    res.render('addlabels', {labels: templabels, manname: tempmanname});
+    //res.render('addlabels', {manName:tempmanName, labels: templabels});
 
 });
 

@@ -1,0 +1,19 @@
+when createrepo
+
+.man1   .man1
+
+when check in many times
+
+
+.man1 .man1,2,3,4,5
+.man2 .man2,label1,2,3,4
+.....
+
+
+label("project 1 target folder", existingLabel, newLabel)
+
+
+1. for line in read(.manlabels.txt):
+    lineList = line.split(" ");
+    var manName = lineList[0]
+    var labels = lineList[1].split(",")
