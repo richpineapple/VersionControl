@@ -876,3 +876,12 @@ myapp/node_modules/yallist/package.json
 myapp/node_modules/yallist/README.md
 myapp/node_modules/yallist/yallist.js
 
+myapp/node_modules/ejs/ejs.js
+myapp/node_modules/ejs/ejs.min.js
+myapp/node_modules/ejs/jakefile.js
+myapp/node_modules/ejs/LICENSE
+myapp/node_modules/ejs/package.json
+myapp/node_modules/ejs/postinstall.js
+myapp/node_modules/ejs/README.md
+myapp/node_modules/ejs/lib/ejs.js
+myapp/node_modules/ejs/lib/utils.js

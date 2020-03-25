@@ -1,10 +1,10 @@
-/* 
+/*
 Authors     :   Contact Info
 Brian Tran  :   briant7234@gmail.com
 Donovan Lee :   donovan10599@gmail.com
 Biao Chen   :   siweisijiao.weebly@gmail.com
-    
-File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo. 
+
+File Description: This file contains functions that create a repo, html pages, and allows users to commit files into the repo.
 There are functions that calculate the Artificial ID.
 */
 const express = require('express');
@@ -36,7 +36,7 @@ app.get('/createrepo',(req,res)=>{
 //now we are able to read the files in certain path, then saving them should not be a problem
 app.get('/commit', (req, res) =>{
     //now we get 2 user input
-    res.sendFile(htmlsFolder + "CreateRepo.html");
+    res.sendFile(htmlsFolder + "checkIn.html");
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
 
@@ -74,7 +74,9 @@ app.get('/commit', (req, res) =>{
     var results =  _getAllFilesFromFolder(sourcePath);
 
     //get what files we already have in the repo part, for comparsion (check repeat) later
+
     var targetFileNames = getAllBaseName(targetPath);
+
 
     console.log("finished the search..");
 
