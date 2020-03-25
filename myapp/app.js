@@ -171,7 +171,7 @@ app.get('/createrepo', (req, res) =>{
     var overallManRecord = "";
     //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
-        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, createrepo);
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "createrepo");
         overallManRecord += oneManRecord;
     });
 
