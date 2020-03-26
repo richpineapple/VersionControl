@@ -147,11 +147,17 @@ app.get('/checkout', (req, res) =>{
 });
 
 app.get('/checkin', (req, res) =>{
-    //now we get 2 user input
+    //now we get 4 user inputs
     res.sendFile(htmlsFolder + "checkIn.html");
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
-
+    
+    var labelOne = req.query.label1;  
+    var labelTwo = req.query.label2;  
+    var labelThree = req.query.label3;  
+    var labelFour = req.query.label4;  
+    
+    var labelTxt = ".manLabel.rc";
     //this line is important, because when first loaded, the code will
     //wait for user input and code will keep running, which is not wanted
     if(!sourcePath || !targetPath){
@@ -172,7 +178,8 @@ app.get('/checkin', (req, res) =>{
     var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     var manLocation = path.join(targetPath, manFileName);
-
+    //label text file location
+    var labelLocation = path.join(targetPath, labelTxt);
 
 
     //get the base folder of the sourcePath, because the .man record
@@ -206,7 +213,7 @@ app.get('/checkin', (req, res) =>{
         var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin");
         overallManRecord += oneManRecord;
     });
-
+    
     //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
@@ -222,6 +229,23 @@ app.get('/checkin', (req, res) =>{
                 console.log("finished creating man file: " + manFileName);
                 copyFileTo(manLocation, path.join(sourcePath, manFileName));
             });
+        }
+    });
+    var relabeledMan = manFileName.split(".");
+    var man_label = manFileName + " "+ relabeledMan[1] + "," + labelOne +","+ labelTwo + "," + labelThree + "," + labelFour;
+    //checks if label file exit, if not then create it
+    filesystem.access(labelLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(labelLocation,man_label, (err) =>{
+                if(err){
+                    console.log("save label file failed...: "+ err);
+                    return;
+                };
+                console.log("label file created: " + labelTxt);
+                copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+            });
+
         }
     });
 
@@ -252,7 +276,7 @@ app.get('/createrepo', (req, res) =>{
         return;
 
     }
-
+    
     //date and time for names for .man file
     var manCounter = new Date();
     var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
