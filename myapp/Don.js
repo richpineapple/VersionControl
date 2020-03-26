@@ -152,12 +152,7 @@ app.get('/checkin', (req, res) =>{
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
     
-    var labelOne = req.query.label1;  
-    var labelTwo = req.query.label2;  
-    var labelThree = req.query.label3;  
-    var labelFour = req.query.label4;  
     
-    var labelTxt = ".manLabel.rc";
     //this line is important, because when first loaded, the code will
     //wait for user input and code will keep running, which is not wanted
     if(!sourcePath || !targetPath){
@@ -179,7 +174,7 @@ app.get('/checkin', (req, res) =>{
 
     var manLocation = path.join(targetPath, manFileName);
     //label text file location
-    var labelLocation = path.join(targetPath, labelTxt);
+    
 
 
     //get the base folder of the sourcePath, because the .man record
@@ -231,23 +226,9 @@ app.get('/checkin', (req, res) =>{
             });
         }
     });
-    var relabeledMan = manFileName.split(".");
-    var man_label = manFileName + " "+ relabeledMan[1] + "," + labelOne +","+ labelTwo + "," + labelThree + "," + labelFour;
-    //checks if label file exit, if not then create it
-    filesystem.access(labelLocation, (err) =>{
-        if(err)
-        {
-            filesystem.writeFile(labelLocation,man_label, (err) =>{
-                if(err){
-                    console.log("save label file failed...: "+ err);
-                    return;
-                };
-                console.log("label file created: " + labelTxt);
-                copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
-            });
-
-        }
-    });
+    
+    
+    
 
 
 
@@ -464,6 +445,55 @@ var copyFileTo = function(from, to){
     });
 };
 
+app.get('/addLabel', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'addLabel.html'));
+
+    var sourcePath = req.query.sourcePath;
+    var labelOne = req.query.label1;  
+    var labelTwo = req.query.label2;  
+    var labelThree = req.query.label3;  
+    var labelFour = req.query.label4;  
+    var labelTxt = ".manLabel.rc";
+
+    if(!sourcePath){
+        return ;
+    }
+
+    if (!filesystem.existsSync(sourcePath) ){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
+
+    }
+    var locater = filesystem.readdirSync(sourcePath);
+    var id;
+    for(i= 0; i < locater.length; i++)
+    {
+        if(locater[i].includes(".man")){
+            locater = locater[i];
+        }
+    }
+    var labelLocation = path.join(sourcePath, labelTxt);
+    var man_label = locater + " "+ locater + "," + labelOne +","+ labelTwo + "," + labelThree + "," + labelFour;
+
+    //checks if label file exit, if not then create it
+    filesystem.access(labelLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(labelLocation,man_label, (err) =>{
+                if(err){
+                    console.log("save label file failed...: "+ err);
+                    return;
+                };
+                console.log("label file created: " + labelTxt);
+                copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+            });
+
+        }
+    });
+
+});
 
 
 
