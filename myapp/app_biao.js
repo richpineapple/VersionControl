@@ -59,14 +59,15 @@ app.get('/test2', (req, res)=>{
     var sourceRepoPath = req.query.sourceRepoPath;
     var sourceManLabel = req.query.sourceManFile;
 
-    var manLabelsFilePath = path.join(sourceRepoPath, ".manLabel.rc");
 
     if(!sourceRepoPath || !sourceManLabel){
         return;
     }
 
-    var actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
+    var manLabelsFilePath = path.join(sourceRepoPath, ".manLabel.rc");
+
     console.log("******************");
+    var actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
 
     //var manFilePath = path.join(sourceRepoPath, actualManFileName);
     console.log("the acutal man file name: " , actualManFileName);
@@ -78,44 +79,26 @@ app.get('/test2', (req, res)=>{
 
 //var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
 var getActualManFileName = function(sourceLabelsFilePath, label){
-    const readline = require("readline");
 
-    var actualManFileName = "NOTFOUND";
+    var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
-
-    const readInterface = readline.createInterface(
-        {
-            input : filesystem.createReadStream(sourceLabelsFilePath),
-            //output : process.stdout,
-            output : false,
-            console : false
-        }
-    );
-
-    var manOrgName = "";
-    var manLabelsList = [];
-
-    readInterface.on('line', function(line){
-        console.log("the line: ", line);
-        var tempList = line.split(" ");
+    for(let i =0; i< lines.length; i++){
+        var currentLine = lines[i];
+        var tempList = currentLine.split(" ");
         manOrgName = tempList[0];
         manLabelsList = tempList[1].split(",");
 
-
-        for(let i = 0; i < manLabelsList.length; i++){
-            var currentLabel = manLabelsList[i];
+        for(let j = 0; j < manLabelsList.length; j++){
+            var currentLabel = manLabelsList[j];
             if(currentLabel == label){
                 console.log("found: ", manOrgName);
                 return manOrgName;
             }
         }
+    }
 
+    return "Not FOUND";
 
-    });
-
-
-    //FIXME: how to make this sync..
-    return actualManFileName;
 
 }
 
