@@ -449,6 +449,7 @@ app.get('/addLabel', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'addLabel.html'));
 
     var sourcePath = req.query.sourcePath;
+    var searchMan = req.query.manName;
     var labelOne = req.query.label1;
     var labelTwo = req.query.label2;
     var labelThree = req.query.label3;
@@ -466,35 +467,54 @@ app.get('/addLabel', function(req, res){
         return;
 
     }
+    //gets manifest path
+    var manLabelsFilePath = path.join(sourcePath, ".manLabel.rc");
+    //gets manifest file name
+    var actualManFileName = getActualManFileName(manLabelsFilePath, searchMan);
+    
+    var manFilePath = path.join(sourcePath, acutalManFileName);
 
-    //only one file? user can not choose which man?
-    var locater = filesystem.readdirSync(sourcePath);
-    var id;
-    for(i= 0; i < locater.length; i++)
-    {
-        if(locater[i].includes(".man")){
-            locater = locater[i];
-        }
-    }
     var labelLocation = path.join(sourcePath, labelTxt);
-    var man_label = locater + " "+ locater + "," + labelOne +","+ labelTwo + "," + labelThree + "," + labelFour;
+    var man_label = acutalManFileName+" "+ acutalManFileName;
+    var user_labels;
+    //checks if label inputs were null
+    if(labelOne != null)
+    {
+        user_labels += ',' + labelOne ;
+    }
+    if(labelTwo != null)
+    {
+        user_labels += ',' +labelTwo;
+    }
+    if(labelThree != null)
+    {
+        user_labels += ',' +labelThree;
+    }
+    if(labelFour != null)
+    {
+        user_labels += ',' +labelFour ;
+    }
 
-    //checks if label file exit, if not then create it
-    filesystem.access(labelLocation, (err) =>{
-        if(err)
-        {
-            filesystem.writeFile(labelLocation,man_label, (err) =>{
-                if(err){
-                    console.log("save label file failed...: "+ err);
-                    return;
-                };
-                console.log("label file created: " + labelTxt);
+    man_label += user_labels;
+
+    
+
+    //if there is no file then create file with all labels
+    filesystem.appendFile(labelLocation,user_labels, (err) =>{
+        if(err){
+            console.log("File not found...");
+            
+            filesystem.writeFile(labelLocation, man_label, (err) =>{
+                if(err)throw err;
+                console.log(labelTxt + "is now created...");
                 copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
-            });
-
-        }
+            })
+            return;
+        };
+        //else if there is a file then append to the right of string.
+        copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+        console.log(labelTxt + " is now updated");
     });
-
 });
 
 
