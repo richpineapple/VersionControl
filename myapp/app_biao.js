@@ -21,13 +21,7 @@ const version = 8;
 
 //template part
 app.set('view engine', 'ejs');
-var ejs = require('ejs');
 
-var students = [
-     'Mark',
-     'Tom',
-     'John'
-]
 app.get('/test', function(req, res){
 
 
@@ -57,38 +51,119 @@ app.get('/test', function(req, res){
 });
 
 
+app.get('/test2', (req, res)=>{
+
+    res.sendFile(htmlsFolder + "checkOut.html");
+
+    //the source repo the user want to download
+    var sourceRepoPath = req.query.sourceRepoPath;
+    var sourceManLabel = req.query.sourceManFile;
+
+    if(!sourceRepoPath || !sourceManLabel){
+        return;
+    }
+
+    var actualManFileName = getActualManFileName(sourceRepoPath, sourceManLabel);
+
+    //var manFilePath = path.join(sourceRepoPath, actualManFileName);
+    console.log("the acutal man file name: " , actualManFileName);
+
+
+
+
+});
+
+//var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
+var getActualManFileName = function(sourceRepoPath, label){
+    const readline = require("readline");
+
+    var actualManFileName = "NOTFOUND";
+
+
+    const readInterface = readline.createInterface(
+        {
+            input : filesystem.createReadStream(path.join(sourceRepoPath, label)),
+            output : process.stdout,
+            console : false
+        }
+    );
+
+    var manOrgName = "";
+    var manLabelsList = [];
+
+    readInterface.on('line', function(line){
+        var tempList = line.split(" ");
+        manOrgName = tempList[0];
+        manLabelsList = tempList[1].split(",");
+        manLabelsList.forEach((oneLabel)=>{
+            if(oneLabel === label){
+                return manOrgName;
+            }
+        })
+    });
+
+
+    return actualManFileName;
+
+}
+
+
+
+
 
 //copy files according the .man file
 app.get('/checkout', (req, res) =>{
     //now we get 2 user input
     res.sendFile(htmlsFolder + "checkOut.html");
+
+    //the source repo the user want to download
+    var sourceRepoPath = req.query.sourceRepoPath;
     var sourceManFile = req.query.sourceManFile;
+
+    //the target folder the user want to place the download
     var targetPath = req.query.targetPath;
 
     //this line is important, because when first loaded, the code will
     //wait for user input and code will keep running, which is not wanted
-    if(!sourceManFile || !targetPath){
+    if(!sourceRepoPath || !sourceManFile || !targetPath){
         return ;
     }
 
-    var sourceManPath = path.join(__dirname, sourceManFile);
+    //var labelTxt = ".manLabel.rc";
+    //FIXME: not sure about the name of the file, may need to change later
+    var manLabelsFilePath = path.join(targetPath, ".manLabel.rc");
+
+    //FIXME: the sourceManFile could be any labels, so may need to
+    //var sourceManPath = path.join(sourceRepoPath, sourceManFile);
+    //get the actual source man path, since the input can be just labels
 
     //check if both path are valid..
-    if (!filesystem.existsSync(sourceManPath) || !filesystem.existsSync(targetPath)){
+    if (!filesystem.existsSync(sourceRepoPath) || !filesystem.existsSync(targetPath)){
         console.log("---------Input error");
         //res.sendFile(path.join(htmlsFolder, "inputError.html"));
         res.send("input error, check your input");
         return;
-
     }
+
+    if(!filesystem.existsSync(manLabelsFilePath)){
+        console.log("the man labels file does not exist: " , manLabelsFilePath);
+        return;
+    }
+
+    //find which man file the input label correspond to
+
+
+
 
     //date and time for names for .man file
     var manCounter = new Date();
     var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     //var manLocation = path.join(targetPath, manFileName);
+
     //FIXME: remeber to copy to target folder
-    var resultManPath = path.join(__dirname, manFileName);
+    //FIXME: save the man file to the sourceRepo folder, then do the copy
+    //var resultManPath = path.join(__dirname, manFileName);
 
 
 
@@ -149,6 +224,7 @@ app.get('/checkout', (req, res) =>{
     */
 
 });
+
 
 app.get('/checkin', (req, res) =>{
     //now we get 2 user input
