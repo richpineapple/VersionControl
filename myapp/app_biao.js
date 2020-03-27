@@ -82,12 +82,15 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
 
     var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
+    //loop over one line a time
     for(let i =0; i< lines.length; i++){
         var currentLine = lines[i];
-        var tempList = currentLine.split(" ");
+        //var tempList = currentLine.split(" ");
+        var tempList = currentLine.split(/(\s+)/);
         manOrgName = tempList[0];
         manLabelsList = tempList[1].split(",");
 
+        //loop over one label at a time for that line
         for(let j = 0; j < manLabelsList.length; j++){
             var currentLabel = manLabelsList[j];
             if(currentLabel == label){
