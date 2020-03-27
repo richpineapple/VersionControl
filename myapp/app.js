@@ -29,7 +29,8 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
         manLabelsList = tempList[1].split(",");
 
         for(let j = 0; j < manLabelsList.length; j++){
-            var currentLabel = manLabelsList[j];
+            //var currentLabel = manLabelsList[j];
+            var currentLabel = manLabelsList[j].replace("\r","");
             if(currentLabel == label){
                 console.log("found: ", manOrgName);
                 return manOrgName;
