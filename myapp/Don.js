@@ -519,7 +519,13 @@ app.get('/addLabel', function(req, res){
     }
     else
     {
-        
+        var lines = filesystem.readFileSync(labelLocation, 'utf-8').split("\n").filter(Boolean);
+        for (let i = 0; i< lines.length; i++){
+            var currentLine = lines[i];
+            var tempList = currentLine.split(" ");
+            var manOrgName = tempList[0];
+            var manLabelsList = tempList[1].split(",");
+        }
     }
 
     //automatically creates the file if it does not exits
