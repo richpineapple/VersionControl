@@ -885,3 +885,5 @@ myapp/node_modules/ejs/postinstall.js
 myapp/node_modules/ejs/README.md
 myapp/node_modules/ejs/lib/ejs.js
 myapp/node_modules/ejs/lib/utils.js
+myapp/test.js
+myapp/tester.txt
