@@ -18,6 +18,175 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const version = 8;
 
+var getActualManFileName = function(sourceLabelsFilePath, label){
+
+    var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
+
+    for(let i =0; i< lines.length; i++){
+        var currentLine = lines[i];
+        var tempList = currentLine.split(" ");
+        manOrgName = tempList[0];
+        manLabelsList = tempList[1].split(",");
+
+        for(let j = 0; j < manLabelsList.length; j++){
+            var currentLabel = manLabelsList[j];
+            if(currentLabel == label){
+                console.log("found: ", manOrgName);
+                return manOrgName;
+            }
+        }
+    }
+
+    return "Not FOUND";
+
+
+}
+
+var getFileNamesFromMan = function(manFilePath){
+    var lines = filesystem.readFileSync(manFilePath, 'utf-8').split("\n").filter(Boolean);
+    var resultList = [];
+    for (let i = 0; i < lines.length; i++){
+        //var oneFileName = lines[i].split("\s")[0];
+        var oneFileName = lines[i].split(/(\s+)/)[0];
+        resultList.push(oneFileName);
+    }
+
+    console.log("the file name list: ", resultList);
+    return resultList;
+}
+
+
+
+
+
+//copy files according the .man file
+app.get('/checkout', (req, res) =>{
+
+    //now we get 2 user input
+    res.sendFile(htmlsFolder + "checkOut.html");
+
+    //the source repo the user want to download
+    var sourceRepoPath = req.query.sourceRepoPath;
+    var sourceManLabel = req.query.sourceManFile;
+
+    //the target folder the user want to place the download
+    var targetPath = req.query.targetPath;
+
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!sourceRepoPath || !sourceManLabel || !targetPath){
+        return ;
+    }
+
+    //check if both path are valid..
+    if (!filesystem.existsSync(sourceRepoPath) || !filesystem.existsSync(targetPath)){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
+    }
+
+    var manLabelsFilePath = path.join(sourceRepoPath, ".manLabel.rc");
+
+    if(!filesystem.existsSync(manLabelsFilePath)){
+        console.log("the man labels file does not exist: " , manLabelsFilePath);
+        return;
+    }
+
+    //find which man file the input label correspond to
+    console.log("******************");
+    var actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
+
+    console.log("the acutal man file name: " , actualManFileName);
+    var checkoutFromManPath = path.join(sourceRepoPath, actualManFileName);
+    //now we have the abs path to the .man file the user want to use to check out
+
+
+    //FIXME: for now, don't think about record to the man yet..
+    if(!filesystem.existsSync(checkoutFromManPath)){
+        console.log("the check out from man file not exist: ", checkoutFromManPath);
+        return;
+    }
+
+    //get the names of the files that we need to copy
+    var fileNameList = getFileNamesFromMan(checkoutFromManPath);
+
+    console.log("the origianl targetPath: ", targetPath);
+    targetPath = path.join(targetPath, path.basename(sourceRepoPath));
+    console.log("the result targetPath: ", targetPath);
+    //create a folder with the same name as repo folder under the target folder
+    if(!filesystem.existsSync(targetPath)){
+        filesystem.mkdirSync(targetPath);
+    }
+
+    //do the copy part: from repo to user target
+    for(let i = 0; i < fileNameList.length; i++){
+        var currentFilePath = path.join(sourceRepoPath, fileNameList[i]);
+        copyFileTo(currentFilePath, path.join(targetPath, fileNameList[i]));
+    }
+
+
+    //saving to the man file
+
+    //date and time for names for .man file
+    var manCounter = new Date();
+    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+
+    //records the checkout details
+    var manLocation = path.join(sourceRepoPath, manFileName);
+
+    //get the base folder of the sourcePath, because the .man record
+    //need to use it as the starting folder in the relative path
+    var sourceBaseFolder = path.basename(sourceRepoPath);
+
+
+    //date and time for .man file records
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
+
+    var overallManRecord = "";
+
+    for(let j = 0; j < fileNameList.length; j++){
+        var currentFileName = fileNameList[j];
+        var relativePath = path.join(sourceBaseFolder, currentFileName);
+        var oneCommand = currentFileName + '\t' + relativePath + "\t" + today +
+            "\t" + "checkout(" + path.join(sourceRepoPath, currentFileName) +", " +
+            path.join(targetPath, currentFileName) + ")\n";
+        overallManRecord += oneCommand;
+
+    }
+
+
+
+    //check if manifest file exist, if not, create it
+    filesystem.access(manLocation, (err) =>{
+        if(err)
+        {
+            filesystem.writeFile(manLocation, overallManRecord, (err)=>{
+                if(err){
+                    console.log("save overallManRecord failed..: " + err);
+                    return;
+                };
+
+
+                //save all the man records at this snapshot
+                console.log("finished creating man file: " + manFileName);
+                copyFileTo(manLocation, path.join(targetPath, manFileName));
+            });
+        }
+    });
+
+
+
+});
+
+
 app.get('/checkin', (req, res) =>{
     //now we get 2 user input
     res.sendFile(htmlsFolder + "checkin.html");
