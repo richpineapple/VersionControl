@@ -497,7 +497,36 @@ app.get('/addLabel', function(req, res){
 
     man_label += user_labels;
 
-    
+    //checks if there is a ManLabel in the folder
+    var checkFolder = filesystem.readdirSync(sourcePath);
+    var i = 0;
+    var textExist = false;
+    for(i = 0; i<checkFolder.length; i++)
+    {
+        if(checkFolder[i] == labelTxt)
+        {
+            textExist = true
+        }
+    }
+    //if no ManLabel then we can create a ManLabel file
+    if(!textExist)
+    {
+        filesystem.appendFile(labelLocation,man_label, (err) =>{
+            if(err) throw err;
+                copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+                console.log(labelTxt + " is now updated");
+        });
+    }
+    else
+    {
+        
+    }
+
+    //automatically creates the file if it does not exits
+    //or appends to the file
+    filesystem.appendFile(labelLocation, user_labels, (err) =>{
+
+    })
 
     //if there is no file then create file with all labels
     filesystem.appendFile(labelLocation,user_labels, (err) =>{
