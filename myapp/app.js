@@ -18,7 +18,38 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const version = 8;
 
+//template part
 app.set('view engine', 'ejs');
+var ejs = require('ejs');
+
+var students = [
+     'Mark',
+     'Tom',
+     'John'
+]
+app.get('/test', function(req, res){
+
+
+    //change repo path to the actual repo path
+    var repoPath = "C:\\Users\\Donald\\Desktop\\proh";
+    console.log(repoPath);
+    //only want the name of the files, not the path
+    var labels = getAllBaseName(repoPath);
+    var i;
+    var baseNames = [];
+    for(i = 0; i < labels.length; i++)
+    {
+        console.log(labels[i]);
+        if(labels[i].includes("man"))
+        {
+            baseNames.push(labels[i]);
+        }
+    }
+    console.log(baseNames);
+    //the "students.ejs" should already be in the views folder
+    res.render('students', {students: baseNames});
+
+});
 
 var getActualManFileName = function(sourceLabelsFilePath, label){
     //if the file is not exist
