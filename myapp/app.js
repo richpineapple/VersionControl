@@ -133,14 +133,22 @@ app.get('/checkout', (req, res) =>{
 
     var manLabelsFilePath = path.join(sourceRepoPath, ".manLabel.rc");
 
-    if(!filesystem.existsSync(manLabelsFilePath)){
+
+    var actualManFileName = "";
+    //if(!filesystem.existsSync(manLabelsFilePath)){
+    if (filesystem.existsSync(path.join(sourceRepoPath,sourceManLabel))){
+        actualManFileName = sourceManLabel;
+    }else if(filesystem.existsSync(manLabelsFilePath)){
         console.log("the man labels file does not exist: " , manLabelsFilePath);
+        return;
+        console.log("******************");
+        actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
+    }else{
+        console.log("either manlabel file not exist or the man file not exist..");
         return;
     }
 
     //find which man file the input label correspond to
-    console.log("******************");
-    var actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
 
     console.log("the acutal man file name: " , actualManFileName);
     var checkoutFromManPath = path.join(sourceRepoPath, actualManFileName);
