@@ -500,10 +500,17 @@ app.get('/addLabel', function(req, res){
     var labelThree = req.query.label3;
     var labelFour = req.query.label4;
     var labelTxt = ".manLabel.rc";
-
     if(!sourcePath){
         return ;
     }
+    console.log("Source path: " + sourcePath);
+    console.log("1: " + labelOne);
+    console.log("2: " + labelTwo);
+    console.log("3: " + labelThree);
+    console.log("4: " + labelFour);
+    console.log("5: " + labelTxt);
+
+    
 
     if (!filesystem.existsSync(sourcePath) ){
         console.log("---------Input error");
@@ -513,14 +520,21 @@ app.get('/addLabel', function(req, res){
 
     }
     //gets manifest path
-    var manLabelsFilePath = path.join(sourcePath, ".manLabel.rc");
+    var manLabelsFilePath = path.join(sourcePath, labelTxt);
+    console.log("Manifest Label File Pathj: " + manLabelsFilePath);
     //gets manifest file name
     var actualManFileName = getActualManFileName(manLabelsFilePath, searchMan);
-    
+    console.log("Actual File Name: " + actualManFileName);
+    if(actualManFileName == "Not FOUND")
+    {
+        actualManFileName = searchMan;
+    }
     var manFilePath = path.join(sourcePath, acutalManFileName);
-
+    console.log("Manifest File Path: " + manFilePath);
     var labelLocation = path.join(sourcePath, labelTxt);
-    var man_label = acutalManFileName+" ";
+    console.log("Label Location: " + labelLocation);
+    var man_label = searchMan+" ";
+    console.log("Manifest Label: " + man_label);
     //sets user_labels as an array
     var user_labels = [];
     //checks if label inputs were null
@@ -540,7 +554,7 @@ app.get('/addLabel', function(req, res){
     {
         user_labels.push(labelFour);
     }
-
+    console.log(user_labels);
 
 
     //checks if there is a ManLabel in the folder
@@ -582,7 +596,7 @@ app.get('/addLabel', function(req, res){
     //if there is a Man label file then we will append
     else
     {
-        //loops through user_labels
+        //loops through user_labels 
         for(let i = 0; i < user_labels.length; i++){
             filesystem.appendFile(labelLocation,"\n"+man_label + ' '+ user_labels[i], (err) =>{
                 if(err) throw err;
