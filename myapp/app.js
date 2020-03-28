@@ -513,7 +513,7 @@ app.get('/addLabel', function(req, res){
 
     }
     //gets manifest path
-    var manLabelsFilePath = path.join(sourcePath, ".manLabel.rc");
+    var manLabelsFilePath = path.join(sourcePath, labelTxt);
     //gets manifest file name
     var actualManFileName = getActualManFileName(manLabelsFilePath, searchMan);
     
