@@ -521,6 +521,7 @@ app.get('/addLabel', function(req, res){
 
     var labelLocation = path.join(sourcePath, labelTxt);
     var man_label = acutalManFileName+" ";
+    //sets user_labels as an array
     var user_labels = [];
     //checks if label inputs were null
     if(labelOne != null)
@@ -581,6 +582,7 @@ app.get('/addLabel', function(req, res){
     //if there is a Man label file then we will append
     else
     {
+        //loops through user_labels 
         for(let i = 0; i < user_labels.length; i++){
             filesystem.appendFile(labelLocation,"\n"+man_label + ' '+ user_labels[i], (err) =>{
                 if(err) throw err;
