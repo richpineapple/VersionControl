@@ -489,6 +489,110 @@ var copyFileTo = function(from, to){
 };
 
 
+//add labels for manifest files
+app.get('/addLabel', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'addLabel.html'));
+
+    var sourcePath = req.query.sourcePath;
+    var searchMan = req.query.manName;
+    var labelOne = req.query.label1;
+    var labelTwo = req.query.label2;
+    var labelThree = req.query.label3;
+    var labelFour = req.query.label4;
+    var labelTxt = ".manLabel.rc";
+
+    if(!sourcePath){
+        return ;
+    }
+
+    if (!filesystem.existsSync(sourcePath) ){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
+
+    }
+    //gets manifest path
+    var manLabelsFilePath = path.join(sourcePath, ".manLabel.rc");
+    //gets manifest file name
+    var actualManFileName = getActualManFileName(manLabelsFilePath, searchMan);
+    
+    var manFilePath = path.join(sourcePath, acutalManFileName);
+
+    var labelLocation = path.join(sourcePath, labelTxt);
+    var man_label = acutalManFileName+" ";
+    var user_labels = [];
+    //checks if label inputs were null
+    if(labelOne != null)
+    {
+        user_labels.push(labelOne);
+    }
+    if(labelTwo != null)
+    {
+        user_labels.push(labelTwo);
+    }
+    if(labelThree != null)
+    {
+        user_labels.push(labelThree);
+    }
+    if(labelFour != null)
+    {
+        user_labels.push(labelFour);
+    }
+
+
+
+    //checks if there is a ManLabel in the folder
+    var checkFolder = filesystem.readdirSync(sourcePath);
+    var i = 0;
+    var textExist = false;
+    for(i = 0; i<checkFolder.length; i++)
+    {
+        if(checkFolder[i] == labelTxt)
+        {
+            textExist = true
+        }
+    }
+    //if no ManLabel then we can create a ManLabel file
+    if(!textExist)
+    {
+        for(let i = 0; i < user_labels.length; i++){
+            if(i == 0){
+                //writes on first line without having to use \n
+                filesystem.appendFile(labelLocation,man_label + ' '+ user_labels[i], (err) =>{
+                    if(err) throw err;
+                        copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+                        console.log(labelTxt + " is now updated");
+                });
+            }
+            else{
+                //appends new labels with \n
+                filesystem.appendFile(labelLocation,"\n"+man_label + ' '+ user_labels[i], (err) =>{
+                    if(err) throw err;
+                        copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+                        console.log(labelTxt + " is now updated");
+                });
+            }
+            
+            
+        }
+        
+    }
+    //if there is a Man label file then we will append
+    else
+    {
+        for(let i = 0; i < user_labels.length; i++){
+            filesystem.appendFile(labelLocation,"\n"+man_label + ' '+ user_labels[i], (err) =>{
+                if(err) throw err;
+                    copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+                    console.log(labelTxt + " is now updated");
+            });
+        }
+    }
+
+});
+
+
 
 
 //root
