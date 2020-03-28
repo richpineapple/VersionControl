@@ -21,6 +21,10 @@ const version = 8;
 app.set('view engine', 'ejs');
 
 var getActualManFileName = function(sourceLabelsFilePath, label){
+    //if the file is not exist
+    if(!filesystem.existsSync(sourceLabelsFilePath)){
+        return false;
+    }
 
     var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
@@ -33,7 +37,7 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
         if(manOrgName == label){
             return manOrgName;
         }
-        
+
         for(let j = 0; j < manLabelsList.length; j++){
             //var currentLabel = manLabelsList[j];
             var currentLabel = manLabelsList[j].replace("\r","");
@@ -514,83 +518,77 @@ app.get('/addLabel', function(req, res){
     }
     //gets manifest path
     var manLabelsFilePath = path.join(sourcePath, ".manLabel.rc");
-    //gets manifest file name
-    var actualManFileName = getActualManFileName(manLabelsFilePath, searchMan);
-    
-    var manFilePath = path.join(sourcePath, acutalManFileName);
+
+    var actualManFileName = "";
+
+    //if the the man label file  exist, then it is the original name
+    if(filesystem.existsSync(path.join(sourcePath, searchMan)) ){
+        actualManFileName = searchMan;
+        //else look for original name in the man label file
+    }else if (filesystem.existsSync(manLabelsFilePath)){
+        actualManFileName = getActualManFileName(manLabelsFilePath, searchMan);
+    }else{
+        //if both condition is false, then the given labels is neither a orig name nor a correct label
+        console.log("the label or the file does not exist...", searchMan);
+        return;
+    }
+
+    console.log("-----------the actual file name: ", actualManFileName);
+
+    var manFilePath = path.join(sourcePath, actualManFileName);
 
     var labelLocation = path.join(sourcePath, labelTxt);
-    var man_label = acutalManFileName+" ";
+    //var man_label = actualManFileName+" ";
+    var manLabel = actualManFileName+" ";
     //sets user_labels as an array
     var user_labels = [];
     //checks if label inputs were null
-    if(labelOne != null)
+    if(labelOne.length > 0)
     {
         user_labels.push(labelOne);
     }
-    if(labelTwo != null)
+    if(labelTwo.length > 0)
     {
         user_labels.push(labelTwo);
     }
-    if(labelThree != null)
+    if(labelThree.length > 0)
     {
         user_labels.push(labelThree);
     }
-    if(labelFour != null)
+    if(labelFour.length > 0)
     {
         user_labels.push(labelFour);
     }
 
+    //the first one does not start with comma
+    if(user_labels.length > 0){
+        manLabel = manLabel + user_labels[0].replace(" ","");
+    }
+
+    for(let j = 1; j < user_labels.length; j++){
+        manLabel = manLabel + ","+user_labels[j].replace(" ","");
+    }
+
+    console.log("the man label: ", manLabel);
+
+    //new line at the end of the line
+    manLabel += "\n";
 
 
-    //checks if there is a ManLabel in the folder
-    var checkFolder = filesystem.readdirSync(sourcePath);
-    var i = 0;
-    var textExist = false;
-    for(i = 0; i<checkFolder.length; i++)
-    {
-        if(checkFolder[i] == labelTxt)
-        {
-            textExist = true
+
+    filesystem.appendFile(labelLocation, manLabel, (err) =>{
+        if(err){
+            filesystem.writeFile(labelLocation, manLabel, (err)=>{
+                if(err){
+                    console.log("failed to create: ", labelLocation);
+                }
+                console.log(labelTxt + " (new) is now updated");
+            })
+        }else{
+            console.log(labelTxt + " (append) is now updated");
         }
-    }
-    //if no ManLabel then we can create a ManLabel file
-    if(!textExist)
-    {
-        for(let i = 0; i < user_labels.length; i++){
-            if(i == 0){
-                //writes on first line without having to use \n
-                filesystem.appendFile(labelLocation,man_label + ' '+ user_labels[i], (err) =>{
-                    if(err) throw err;
-                        copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
-                        console.log(labelTxt + " is now updated");
-                });
-            }
-            else{
-                //appends new labels with \n
-                filesystem.appendFile(labelLocation,"\n"+man_label + ' '+ user_labels[i], (err) =>{
-                    if(err) throw err;
-                        copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
-                        console.log(labelTxt + " is now updated");
-                });
-            }
-            
-            
-        }
-        
-    }
-    //if there is a Man label file then we will append
-    else
-    {
-        //loops through user_labels
-        for(let i = 0; i < user_labels.length; i++){
-            filesystem.appendFile(labelLocation,"\n"+man_label + ' '+ user_labels[i], (err) =>{
-                if(err) throw err;
-                    copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
-                    console.log(labelTxt + " is now updated");
-            });
-        }
-    }
+        copyFileTo(labelLocation, path.join(sourcePath, labelTxt));
+    });
 
 });
 
