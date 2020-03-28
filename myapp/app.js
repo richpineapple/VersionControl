@@ -17,15 +17,18 @@ const path = require("path");
 const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const version = 8;
-
+//the html template page
 app.set('view engine', 'ejs');
 
+//providing the file with manFileName and labels, and label user provide,
+//return the actual name of the .man file the user means
 var getActualManFileName = function(sourceLabelsFilePath, label){
-    //if the file is not exist
+    //if the file is not exist, there is no where to search the origianl man file name
     if(!filesystem.existsSync(sourceLabelsFilePath)){
         return false;
     }
 
+    //convert the file into list of lines
     var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
     for(let i =0; i< lines.length; i++){
