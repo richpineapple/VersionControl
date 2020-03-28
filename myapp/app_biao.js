@@ -92,6 +92,10 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
         manOrgName = tempList[0];
         manLabelsList = tempList[1].split(",");
 
+        if(manOrgName == label){
+            return manOrgName;
+        }
+
         //loop over one label at a time for that line
         for(let j = 0; j < manLabelsList.length; j++){
             var currentLabel = manLabelsList[j].replace("\r","");

@@ -18,6 +18,8 @@ const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
 const version = 8;
 
+app.set('view engine', 'ejs');
+
 var getActualManFileName = function(sourceLabelsFilePath, label){
 
     var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
@@ -28,6 +30,10 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
         manOrgName = tempList[0];
         manLabelsList = tempList[1].split(",");
 
+        if(manOrgName == label){
+            return manOrgName;
+        }
+        
         for(let j = 0; j < manLabelsList.length; j++){
             //var currentLabel = manLabelsList[j];
             var currentLabel = manLabelsList[j].replace("\r","");
