@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>List Labels</title>
+    </head>
+    <body>
+        <ul>
+            <% Object.keys(sampleDict).forEach(function(fileName){ %>
+
+                <li><%= fileName%></li>
+            <ul>
+                    <% sampleDict[fileName].forEach(function(oneLabel){ %>
+                        <li><%= oneLabel%></li>
+                    <% }); %>
+
+                </ul>
+            <% }); %>
+        </ul>
+
+    </body>
+</html>

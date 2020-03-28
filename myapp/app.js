@@ -51,6 +51,113 @@ app.get('/test', function(req, res){
 
 });
 
+app.get("/test2", (req, res)=>{
+    res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
+    var targetRepo = req.query.targetRepo;
+    if(!targetRepo){
+        return;
+    }
+
+    if(!filesystem.existsSync(targetRepo)){
+        console.log("target repo not exist");
+        return;
+    }
+
+
+    var allFilesInTarget = getAllFilesFromFolder(targetRepo);
+    //console.log("all files in target: ", allFilesInTarget);
+
+    //res.render('listLabels', {labels: allFilesInTarget, manFiles: allFilesInTarget});
+
+    var manLabelsFilePath = path.join(targetRepo, ".manLabel.rc");
+    if(!filesystem.existsSync(manLabelsFilePath)){
+        var sampleDict = new Object();
+        sampleDict['1'] = ["this is one", "another one"];
+        sampleDict['2'] = ["this is two", "another two"];
+        sampleDict['3'] = ["this is three", "another three"];
+
+
+        console.log("not exist: ", manLabelsFilePath);
+        res.render('test', {sampleDict : sampleDict});
+        //else, only display the .man file names
+
+    }else{
+    //if the labels file exist, then we can just use the file
+        console.log("exist: ", manLabelsFilePath);
+    }
+
+});
+
+app.get("/listLabels", function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
+    var targetRepo = req.query.targetRepo;
+    if(!targetRepo){
+        return;
+    }
+
+    if(!filesystem.existsSync(targetRepo)){
+        console.log("target repo not exist");
+        return;
+    }
+
+
+    var allFilesInTarget = getAllFilesFromFolder(targetRepo);
+    //console.log("all files in target: ", allFilesInTarget);
+
+    //res.render('listLabels', {labels: allFilesInTarget, manFiles: allFilesInTarget});
+
+    var resultDict = {};
+
+    var manLabelsFilePath = path.join(targetRepo, ".manLabel.rc");
+    if(!filesystem.existsSync(manLabelsFilePath)){
+        var allFileBaseName = getAllBaseName_List(allFilesInTarget);
+        var allManBaseName = [];
+        for(let i = 0; i < allFileBaseName.length; i++){
+            if(allFileBaseName[i].includes(".man")){
+                allManBaseName.push(allFileBaseName[i]);
+            }
+        }
+        console.log("not exist: ", manLabelsFilePath);
+        resultDict["All Man Files (No Labels Are Added)"] = allManBaseName;
+        res.render('listLabels', {manLabelsDict: resultDict, repoPath:targetRepo});
+        //else, only display the .man file names
+
+    }else{
+    //if the labels file exist, then we can just use the file
+        console.log("exist: ", manLabelsFilePath);
+
+
+
+        //convert the file into list of lines
+        var lines = filesystem.readFileSync(manLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
+
+        for(let i =0; i< lines.length; i++){
+            var currentLine = lines[i];
+            var tempList = currentLine.split(" ");
+            manOrgName = tempList[0];
+            manLabelsList = tempList[1].split(",");
+
+            if(manOrgName in resultDict){
+                for(let k = 0; k < manLabelsList.length; k ++){
+                    //push one label to the dictionary at a time
+                    resultDict[manOrgName].push(manLabelsList[k]);
+                }
+            }else{
+                resultDict[manOrgName] = manLabelsList;
+            }
+
+
+        }
+
+        console.log("the dictionary: ", resultDict);
+
+
+        res.render('listLabels', {manLabelsDict: resultDict, repoPath:targetRepo});
+
+    }
+
+});
+
 //providing the file with manFileName and labels, and label user provide,
 //return the actual name of the .man file the user means
 var getActualManFileName = function(sourceLabelsFilePath, label){
@@ -135,7 +242,9 @@ app.get('/checkout', (req, res) =>{
 
 
     var actualManFileName = "";
-    //if(!filesystem.existsSync(manLabelsFilePath)){
+
+    //either the label user provided is the original name, or part of the labels already exist
+    //else return
     if (filesystem.existsSync(path.join(sourceRepoPath,sourceManLabel))){
         actualManFileName = sourceManLabel;
     }else if(filesystem.existsSync(manLabelsFilePath)){
@@ -653,6 +762,13 @@ var getAllBaseName = function(dir){
     return allBaseNames;
 };
 
+var getAllBaseName_List = function(aList){
+    var resultList = [];
+    for(let i = 0; i < aList.length; i++){
+        resultList.push(path.basename(aList[i]));
+    }
+    return resultList;
+}
 
 
 //do the scan part
