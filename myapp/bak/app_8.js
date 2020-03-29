@@ -26,11 +26,37 @@ const version = 8;
 //template part
 app.set('view engine', 'ejs');
 
-//list the .man files and their corresponding labels in the target repo
-app.get("/listLabels", function(req, res){
-    res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
+var students = [
+     'Mark',
+     'Tom',
+     'John'
+]
+app.get('/test', function(req, res){
 
-    //checking the input
+
+    //change repo path to the actual repo path
+    var repoPath = "C:\\Users\\Donald\\Desktop\\proh";
+    console.log(repoPath);
+    //only want the name of the files, not the path
+    var labels = getAllBaseName(repoPath);
+    var i;
+    var baseNames = [];
+    for(i = 0; i < labels.length; i++)
+    {
+        console.log(labels[i]);
+        if(labels[i].includes("man"))
+        {
+            baseNames.push(labels[i]);
+        }
+    }
+    console.log(baseNames);
+    //the "students.ejs" should already be in the views folder
+    res.render('students', {students: baseNames});
+
+});
+
+app.get("/test2", (req, res)=>{
+    res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
     var targetRepo = req.query.targetRepo;
     if(!targetRepo){
         return;
@@ -42,16 +68,51 @@ app.get("/listLabels", function(req, res){
     }
 
 
-    //get all the files from target repo
     var allFilesInTarget = getAllFilesFromFolder(targetRepo);
+    //console.log("all files in target: ", allFilesInTarget);
 
-    //the result dictionary we will pass to the template
+    //res.render('listLabels', {labels: allFilesInTarget, manFiles: allFilesInTarget});
+
+    var manLabelsFilePath = path.join(targetRepo, ".manLabel.rc");
+    if(!filesystem.existsSync(manLabelsFilePath)){
+        var sampleDict = new Object();
+        sampleDict['1'] = ["this is one", "another one"];
+        sampleDict['2'] = ["this is two", "another two"];
+        sampleDict['3'] = ["this is three", "another three"];
+
+
+        console.log("not exist: ", manLabelsFilePath);
+        res.render('test', {sampleDict : sampleDict});
+        //else, only display the .man file names
+
+    }else{
+    //if the labels file exist, then we can just use the file
+        console.log("exist: ", manLabelsFilePath);
+    }
+
+});
+
+app.get("/listLabels", function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
+    var targetRepo = req.query.targetRepo;
+    if(!targetRepo){
+        return;
+    }
+
+    if(!filesystem.existsSync(targetRepo)){
+        console.log("target repo not exist");
+        return;
+    }
+
+
+    var allFilesInTarget = getAllFilesFromFolder(targetRepo);
+    //console.log("all files in target: ", allFilesInTarget);
+
+    //res.render('listLabels', {labels: allFilesInTarget, manFiles: allFilesInTarget});
+
     var resultDict = {};
 
-    //record of man file name and their labels
     var manLabelsFilePath = path.join(targetRepo, ".manLabel.rc");
-
-    //if the labels file exist, then we can just display the file name
     if(!filesystem.existsSync(manLabelsFilePath)){
         var allFileBaseName = getAllBaseName_List(allFilesInTarget);
         var allManBaseName = [];
@@ -60,18 +121,20 @@ app.get("/listLabels", function(req, res){
                 allManBaseName.push(allFileBaseName[i]);
             }
         }
-        console.log("Man label record not exist: ", manLabelsFilePath);
+        console.log("not exist: ", manLabelsFilePath);
         resultDict["All Man Files (No Labels Are Added)"] = allManBaseName;
         res.render('listLabels', {manLabelsDict: resultDict, repoPath:targetRepo});
+        //else, only display the .man file names
 
     }else{
-    //if there are record of man file name and labels, we will use that
-        console.log("Man label record exist: ", manLabelsFilePath);
+    //if the labels file exist, then we can just use the file
+        console.log("exist: ", manLabelsFilePath);
+
+
 
         //convert the file into list of lines
         var lines = filesystem.readFileSync(manLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
-        //make the man: [labels] to dictionary relationship
         for(let i =0; i< lines.length; i++){
             var currentLine = lines[i];
             var tempList = currentLine.split(" ");
@@ -86,9 +149,13 @@ app.get("/listLabels", function(req, res){
             }else{
                 resultDict[manOrgName] = manLabelsList;
             }
+
+
         }
 
-        //pass the man:[labels] relationship to the template to display
+        console.log("the dictionary: ", resultDict);
+
+
         res.render('listLabels', {manLabelsDict: resultDict, repoPath:targetRepo});
 
     }
@@ -106,7 +173,6 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
     //convert the file into list of lines
     var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
-    //look for the .man file name with that label
     for(let i =0; i< lines.length; i++){
         var currentLine = lines[i];
         var tempList = currentLine.split(" ");
@@ -132,16 +198,18 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
 
 }
 
-
-//get the [filename, orgRelativePath] list from the man file
 var getFileNamesFromMan = function(manFilePath){
     var lines = filesystem.readFileSync(manFilePath, 'utf-8').split("\n").filter(Boolean);
     var resultList = [];
     for (let i = 0; i < lines.length; i++){
+        //var oneFileName = lines[i].split("\s")[0];
+        //var splitList = lines[i].split(/(\s+)/);
         var splitList = lines[i].split("\t");
+        //var oneFileName = lines[i].split(/(\s+)/)[0];
         console.log("the split list: ", splitList);
         var oneFileName = splitList[0];
         var fileOrgPath = splitList[1];
+        //resultList.push(oneFileName);
         resultList.push([oneFileName, fileOrgPath]);
     }
 
@@ -153,7 +221,7 @@ var getFileNamesFromMan = function(manFilePath){
 
 
 
-//copy files from repo to target folder according the .man file
+//copy files according the .man file
 app.get('/checkout', (req, res) =>{
 
     //now we get 2 user input
@@ -312,7 +380,6 @@ app.get('/checkout', (req, res) =>{
 });
 
 
-//save the files status to the repo at that specific moment to the repo
 app.get('/checkin', (req, res) =>{
     //now we get 2 user input
     res.sendFile(htmlsFolder + "checkin.html");
@@ -398,7 +465,7 @@ app.get('/checkin', (req, res) =>{
 
 
 
-//this is the first step for the version control, create a repo and the first version of the snapshot of the project
+//if first time, it will be create the repo
 app.get('/createrepo', (req, res) =>{
     //now we get 2 user input
     res.sendFile(htmlsFolder + "CreateRepo.html");
@@ -556,15 +623,28 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
     artID = artID + "." + origianlExtension;
 
 
+    /*
+    //step 4: do comparsion before try to save to the server
+    for(let idx = 0; idx < targetFileNames.length; idx++){
+        if(targetFileNames[idx] === artID){
+            console.log("name repeated..");
+            return;
+        }
+    }
+    */
+
 
     //then do the save, copy file from source to the target folder with as file with new ARTID name
     console.log("try to save to repo: " + file);
     filesystem.writeFileSync(path.join(targetPath, artID), content);
 
     //step 5: save to the manifest file
+    //var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
     var commandRecord = " " + command +"(" + file + ", " + path.join(targetPath, artID) + ") ";
     var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today +"\t"+ commandRecord+"\n";
 
+    //save all the man command to one String, and save this string later
+    //overallManRecord += manifestRecord;
 
     //return this one record
     return manifestRecord;
@@ -595,7 +675,7 @@ var copyFileTo = function(from, to){
 };
 
 
-//add labels for manifest files (nickname)
+//add labels for manifest files
 app.get('/addLabel', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'addLabel.html'));
 
@@ -697,13 +777,12 @@ app.get('/addLabel', function(req, res){
 
 
 
-//root, return the main html page
+//root
 app.get('/', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
 });
 
 
-//return list of base name with parameter of one dir path(here it will do the search)
 var getAllBaseName = function(dir){
     var allFilesPath = getAllFilesFromFolder(dir);
     var allBaseNames = [];
@@ -714,7 +793,6 @@ var getAllBaseName = function(dir){
     return allBaseNames;
 };
 
-//return list of base name with parameter of list of dir path,(it does not do the search)
 var getAllBaseName_List = function(aList){
     var resultList = [];
     for(let i = 0; i < aList.length; i++){

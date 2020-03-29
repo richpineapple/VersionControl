@@ -5,12 +5,13 @@
         <title>List Labels</title>
     </head>
     <body>
+                <li><%= repoPath%></li>
         <ul>
-            <% Object.keys(sampleDict).forEach(function(fileName){ %>
+            <% Object.keys(manLabelsDict).forEach(function(manFileName){ %>
 
-                <li><%= fileName%></li>
+                <li><%= manFileName%></li>
             <ul>
-                    <% sampleDict[fileName].forEach(function(oneLabel){ %>
+                    <% manLabelsDict[manFileName].forEach(function(oneLabel){ %>
                         <li><%= oneLabel%></li>
                     <% }); %>
 
