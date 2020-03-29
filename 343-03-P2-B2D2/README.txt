@@ -40,7 +40,7 @@ Contents
     343-03-P2-B2D2(folder)
         App.js
         CRC_Cards.docx
-        UseCases.docx
+        useCases.png
         htmlFiles(folder)
             addLabel.html
             checkIn.html
