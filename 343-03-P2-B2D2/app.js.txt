@@ -38,6 +38,7 @@ app.get("/listLabels", function(req, res){
 
     if(!filesystem.existsSync(targetRepo)){
         console.log("target repo not exist");
+        res.send("target folder not exist: " + targetRepo);
         return;
     }
 
@@ -173,10 +174,13 @@ app.get('/checkout', (req, res) =>{
     }
 
     //check if both path are valid..
-    if (!filesystem.existsSync(sourceRepoPath) || !filesystem.existsSync(targetPath)){
-        console.log("---------Input error");
-        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
-        res.send("input error, check your input");
+    if (!filesystem.existsSync(sourceRepoPath) ){
+        res.send("source repo path not exist: " + sourceRepoPath);
+        return;
+    }
+
+    if (!filesystem.existsSync(targetPath)){
+        res.send("targetPath not exist: " + targetPath);
         return;
     }
 
@@ -196,6 +200,7 @@ app.get('/checkout', (req, res) =>{
         actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
     }else{
         console.log("either manlabel file not exist or the man file not exist..");
+        res.send("either the manfilename or the label you provide not exist: " + sourceManLabel);
         return;
     }
 
@@ -326,10 +331,13 @@ app.get('/checkin', (req, res) =>{
     }
 
     //check if both path are valid..
-    if (!filesystem.existsSync(sourcePath) || !filesystem.existsSync(targetPath)){
-        console.log("---------Input error");
-        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
-        res.send("input error, check your input");
+    if (!filesystem.existsSync(sourcePath)){
+        res.send("source path not exist: " + sourcePath);
+        return;
+
+    }
+    if (!filesystem.existsSync(targetPath)){
+        res.send("target path not exist: " + targetPath);
         return;
 
     }
@@ -412,10 +420,14 @@ app.get('/createrepo', (req, res) =>{
     }
 
     //check if both path are valid..
-    if (!filesystem.existsSync(sourcePath) || !filesystem.existsSync(targetPath)){
-        console.log("---------Input error");
-        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
-        res.send("input error, check your input");
+    if (!filesystem.existsSync(sourcePath)){
+        res.send("source path not exist: " + sourcePath);
+        return;
+
+    }
+
+    if (!filesystem.existsSync(targetPath)){
+        res.send("target path not exist: " + targetPath);
         return;
 
     }
@@ -612,9 +624,7 @@ app.get('/addLabel', function(req, res){
     }
 
     if (!filesystem.existsSync(sourcePath) ){
-        console.log("---------Input error");
-        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
-        res.send("input error, check your input");
+        res.send("Source Path in not valid: " + sourcePath);
         return;
 
     }
@@ -632,6 +642,7 @@ app.get('/addLabel', function(req, res){
     }else{
         //if both condition is false, then the given labels is neither a orig name nor a correct label
         console.log("the label or the file does not exist...", searchMan);
+        res.send("the label or the file does not exist: " + searchMan);
         return;
     }
 
