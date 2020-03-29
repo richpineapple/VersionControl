@@ -199,8 +199,14 @@ var getFileNamesFromMan = function(manFilePath){
     var resultList = [];
     for (let i = 0; i < lines.length; i++){
         //var oneFileName = lines[i].split("\s")[0];
-        var oneFileName = lines[i].split(/(\s+)/)[0];
-        resultList.push(oneFileName);
+        //var splitList = lines[i].split(/(\s+)/);
+        var splitList = lines[i].split("\t");
+        //var oneFileName = lines[i].split(/(\s+)/)[0];
+        console.log("the split list: ", splitList);
+        var oneFileName = splitList[0];
+        var fileOrgPath = splitList[1];
+        //resultList.push(oneFileName);
+        resultList.push([oneFileName, fileOrgPath]);
     }
 
     console.log("the file name list: ", resultList);
@@ -271,6 +277,7 @@ app.get('/checkout', (req, res) =>{
     }
 
     //get the names of the files that we need to copy
+    //idx 0 is the artName so far, idx 1 is the original tree structure
     var fileNameList = getFileNamesFromMan(checkoutFromManPath);
 
     console.log("the origianl targetPath: ", targetPath);
@@ -281,14 +288,8 @@ app.get('/checkout', (req, res) =>{
         filesystem.mkdirSync(targetPath);
     }
 
-    //do the copy part: from repo to user target
-    for(let i = 0; i < fileNameList.length; i++){
-        var currentFilePath = path.join(sourceRepoPath, fileNameList[i]);
-        copyFileTo(currentFilePath, path.join(targetPath, fileNameList[i]));
-    }
+    console.log("filename[0][1]: ", fileNameList[0][1]);
 
-
-    //saving to the man file
 
     //date and time for names for .man file
     var manCounter = new Date();
@@ -314,15 +315,41 @@ app.get('/checkout', (req, res) =>{
 
     var overallManRecord = "";
 
+    //FIXME:..
     for(let j = 0; j < fileNameList.length; j++){
-        var currentFileName = fileNameList[j];
-        var relativePath = path.join(sourceBaseFolder, currentFileName);
-        var oneCommand = currentFileName + '\t' + relativePath + "\t" + today +
-            "\t" + "checkout(" + path.join(sourceRepoPath, currentFileName) +", " +
-            path.join(targetPath, currentFileName) + ")\n";
-        overallManRecord += oneCommand;
 
     }
+    //targetPath = path.join(targetPath, originalProjectFolderName);
+
+    //do the copy part: from repo to user target
+    for(let i = 0; i < fileNameList.length; i++){
+        var currentFilePath = path.join(sourceRepoPath, fileNameList[i][0]);
+        //copyFileTo(currentFilePath, path.join(targetPath, fileNameList[i]));
+        var fileOrgRelativePathDir = path.dirname(fileNameList[i][1]);
+
+        var currentTargetDir = path.join(targetPath, fileOrgRelativePathDir);
+
+        //create the dir if they don't exist
+        filesystem.mkdirSync(currentTargetDir, {recursive: true}, (error) =>{
+            if(error){
+                console.log("error when creating: ", error ," : ", currentTargetDir);
+            }else{
+                console.log("create target dir: ", currentTargetDir);
+            }
+        });
+        copyFileTo(currentFilePath, path.join(currentTargetDir, path.basename(fileNameList[i][1])));
+
+        //the .man part
+        var currentFileName = fileNameList[i][0];
+        var relativePath = path.join(sourceBaseFolder, currentFileName);
+        var oneCommand = currentFileName + '\t' + relativePath + "\t" + today +
+            "\t" + "checkout(" + path.join(sourceRepoPath, currentFileName) +"," +
+            path.join(currentTargetDir, path.basename(fileNameList[i][1])) + ")\n";
+        overallManRecord += oneCommand;
+    }
+
+
+
 
 
 
@@ -610,7 +637,7 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
     //step 5: save to the manifest file
     //var commandRecord = " CreateRepo(" + file + ", " + path.join(targetPath, artID) + ") ";
     var commandRecord = " " + command +"(" + file + ", " + path.join(targetPath, artID) + ") ";
-    var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today + commandRecord+"\n";
+    var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today +"\t"+ commandRecord+"\n";
 
     //save all the man command to one String, and save this string later
     //overallManRecord += manifestRecord;
