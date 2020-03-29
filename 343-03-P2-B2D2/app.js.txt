@@ -57,7 +57,7 @@ app.get("/listLabels", function(req, res){
         var allFileBaseName = getAllBaseName_List(allFilesInTarget);
         var allManBaseName = [];
         for(let i = 0; i < allFileBaseName.length; i++){
-            if(allFileBaseName[i].includes(".man")){
+            if(allFileBaseName[i].includes(".man-000")){
                 allManBaseName.push(allFileBaseName[i]);
             }
         }
@@ -66,6 +66,18 @@ app.get("/listLabels", function(req, res){
         res.render('listLabels', {manLabelsDict: resultDict, repoPath:targetRepo});
 
     }else{
+        var allFileBaseName = getAllBaseName_List(allFilesInTarget);
+        var allManBaseName = [];
+        for(let i = 0; i < allFileBaseName.length; i++){
+            if(allFileBaseName[i].includes(".man-000")){
+                allManBaseName.push(allFileBaseName[i]);
+            }
+        }
+
+        for(let k = 0; k < allManBaseName.length; k++){
+            resultDict[allFileBaseName[k]] = [];
+        }
+
     //if there are record of man file name and labels, we will use that
         console.log("Man label record exist: ", manLabelsFilePath);
 
@@ -82,9 +94,11 @@ app.get("/listLabels", function(req, res){
             if(manOrgName in resultDict){
                 for(let k = 0; k < manLabelsList.length; k ++){
                     //push one label to the dictionary at a time
+                    //console.log("pushing: ");
                     resultDict[manOrgName].push(manLabelsList[k]);
                 }
             }else{
+                //console.log("new: ");
                 resultDict[manOrgName] = manLabelsList;
             }
         }
@@ -195,7 +209,6 @@ app.get('/checkout', (req, res) =>{
         actualManFileName = sourceManLabel;
     }else if(filesystem.existsSync(manLabelsFilePath)){
         console.log("the man labels file does not exist: " , manLabelsFilePath);
-        return;
         console.log("******************");
         actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
     }else{
@@ -234,7 +247,8 @@ app.get('/checkout', (req, res) =>{
 
     //date and time for names for .man file
     var manCounter = new Date();
-    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    //FIXME: this is important 000 is in, 111 is out
+    var manFileName = ".man-" + "111" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     //records the checkout details
     var manLocation = path.join(sourceRepoPath, manFileName);
@@ -344,7 +358,7 @@ app.get('/checkin', (req, res) =>{
 
     //date and time for names for .man file
     var manCounter = new Date();
-    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    var manFileName = ".man-" +"000"+ manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     var manLocation = path.join(targetPath, manFileName);
 
@@ -434,7 +448,7 @@ app.get('/createrepo', (req, res) =>{
 
     //date and time for names for .man file
     var manCounter = new Date();
-    var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    var manFileName = ".man-" + "000"+ manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     var manLocation = path.join(targetPath, manFileName);
 
