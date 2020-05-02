@@ -355,26 +355,19 @@ app.get('/checkin', (req, res) =>{
 
     }
 
-    //date and time for names for .man file
-    var manCounter = new Date();
-    var manFileName = ".man-" +"000"+ manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    var manFileName = getCheckInManName();
 
     var manLocation = path.join(targetPath, manFileName);
-
-
 
     //get the base folder of the sourcePath, because the .man record
     //need to use it as the starting folder in the relative path
     var sourceBaseFolder = path.basename(sourcePath);
 
 
-
-
     //call the scan function, and get the result list, all paths
     var results =  getAllFilesFromFolder(sourcePath);
 
 
-    console.log("finished the search..");
 
     //used for calculating the ArtID
 
@@ -382,13 +375,13 @@ app.get('/checkin', (req, res) =>{
     var today = getTodayForMan();
 
     var overallManRecord = "";
-    //loop over all the filePath in the sourcePath, one at a time
+    //loop over all the files with their paths, and given them art names and save
     results.forEach(function(file){
         var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin");
         overallManRecord += oneManRecord;
     });
 
-    //check if manifest file exist, if not, create it
+    //record to the man file
     filesystem.access(manLocation, (err) =>{
         if(err)
         {
@@ -399,8 +392,7 @@ app.get('/checkin', (req, res) =>{
                 };
 
 
-                //save all the man records at this snapshot
-                console.log("finished creating man file: " + manFileName);
+                //copy man file to the source
                 copyFileTo(manLocation, path.join(sourcePath, manFileName));
             });
         }
@@ -438,9 +430,8 @@ app.get('/createrepo', (req, res) =>{
 
     }
 
-    //date and time for names for .man file
-    var manCounter = new Date();
-    var manFileName = ".man-" + "000"+ manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    //same rule as check in man name
+    var manFileName = getCheckInManName();
 
     var manLocation = path.join(targetPath, manFileName);
 
@@ -583,16 +574,6 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
 };
 
 
-//should work with setTimeOut, save file in a slower manner, so the file to save to
-//will eventually exist
-var appendToFile = function(filePath, content){
-    filesystem.appendFile(filePath, content, function (err) {
-        console.log("recording manRecord: " + content);
-        if (err) throw err;
-        console.log('Saved!');
-    });
-
-};
 
 //should work with setTimeOut, copy file in a slower manner,
 //so the file will be updated and will keep copying after main loop exit
