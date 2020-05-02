@@ -264,6 +264,11 @@ app.get('/checkout', (req, res) =>{
         filesystem.mkdirSync(targetPath);
     }
 
+    targetPath = path.join(targetPath, path.basename(sourceRepoPath));
+
+    //target path = originalTargetPath + the base folder of the project
+    //so when I copy the man file, copy to under the base folder of the copy
+    var targetManFilePath = path.join(targetPath, fileNameList[0][1].split("\\")[0]);
 
     var manFileName = getCheckOutManName();
 
@@ -320,7 +325,7 @@ app.get('/checkout', (req, res) =>{
 
                 //save all the man records at this snapshot
                 console.log("finished creating man file: " + manFileName);
-                copyFileTo(manLocation, path.join(targetPath, manFileName));
+                copyFileTo(manLocation, path.join(targetManFilePath, manFileName));
             });
         }
     });
