@@ -33,6 +33,7 @@ app.set('view engine', 'ejs');
 //some necessary global variables
 var checkInManPref =  ".man-000";
 var checkOutManPref = ".man-111";
+var mergeManPref = ".man-222";
 
 //list the .man files and their corresponding labels in the target repo
 app.get("/listLabels", function(req, res){
@@ -146,7 +147,7 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
         }
     }
 
-    return "Not FOUND";
+    return false;
 
 }
 
@@ -178,6 +179,13 @@ var getCheckOutManName = function(){
     var manCounter = new Date();
     var manFileName = checkOutManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
     return manFileName;
+}
+
+var getMergeManName = function(){
+    var manCounter = new Date();
+    var manFileName = mergeManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    return manFileName;
+
 }
 
 var getTodayForMan = function(){
@@ -334,6 +342,118 @@ app.get('/checkout', (req, res) =>{
 
 });
 
+
+app.get('/merge', (req, res) => {
+    res.sendFile(path.join(htmlsFolder, "merge.html"))
+
+    var repoPath = req.query.repoPath;
+    var repoManLabel = req.query.repoManLabel;
+    var targetProjectPath = req.query.targetProjectPath;
+
+    if (!filesystem.existsSync(repoPath)){
+        res.send("repo path not exist: " + repoPath);
+        return;
+    }
+
+    if(!filesystem.existsSync(targetProjectPath)){
+        res.send("target project path not exist: " + repoPath)
+        return;
+    }
+
+    var manLabelsFilePath = path.join(repoPath, ".manLabel.rc");
+    var actualManFileName = "";
+
+    if(filesystem.existsSync(path.join(repoPath, repoManLabel)) ){
+        actualManFileName = repoManLabel;
+        //else look for original name in the man label file
+    }else if (filesystem.existsSync(manLabelsFilePath)){
+        actualManFileName = getActualManFileName(manLabelsFilePath, repoManLabel);
+        if(actualManFileName == false){
+            res.send("label not exist..");
+        }
+    }else{
+        res.send("label not exist...");
+        return;
+    }
+
+    console.log("actual man file name: " + actualManFileName);
+
+    //FIXME:
+    //1st: mergeout..
+    mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
+
+
+})
+
+var mergeOut = function(tPath, repoPath, repoManPath){
+
+    //first, do the checkin
+    var repoTManName = getMergeManName();
+    var repoTManLocation = path.join(repoPath, repoTManName);
+    var tBaseFolder = path.basename(tPath);
+
+    var allFilesPath = getAllFilesFromFolder(tPath);
+    //time stamp for man file
+    var today = getTodayForMan();
+
+    var overAllManRecord = "";
+    var tManDict = {};
+    //FIXME: remember to save to the man file at some point later
+    allFilesPath.forEach(function(oneFilePath){
+        var oneManRecord = getArtNameAndSave(oneFilePath, tBaseFolder, repoPath, today, "merge" );
+        var tempList = oneManRecord.split("\t");
+        //key: relative path,   value: result art name
+        tManDict[tempList[1]] = tempList[0];
+        overAllManRecord = overAllManRecord + oneManRecord;
+    });
+
+    //step two: deal with conflicts
+
+    //read the R man file into list first
+    var rManDict = {};
+    //if has more files than tManFile, add the extra man record line
+    var rManFullRecordDict = {};
+    var rManFileLines = filesystem.readFileSync(repoManPath, "utf-8").split("\n").filter(Boolean);
+    rManFileLines.forEach(function(oneLine){
+        var temp = oneLine.split("\t");
+        //key: relative path,  value: art name
+        rManDict[temp[1]] = temp[0];
+        rManFullRecordDict[temp[1]] = oneLine;
+    });
+
+    //compare the tManDict and rManDict to check the collisions
+        //list of list, [rArtName, tArtName]
+    var collisionList = [];
+    console.log("dict in rMandict: " + rManDict);
+    for(let oneKey in tManDict){
+        if(rManDict.hasOwnProperty(oneKey)){
+            console.log("repeat: " + oneKey);
+            //if art name is the same, then we just replace
+            var rArtName = rManDict[oneKey];
+            var tArtName = tManDict[oneKey];
+
+            if(rArtName == tArtName){
+                console.log("same name: " + rArtName);
+            }else{
+                console.log("different art name: " + rArtName + ", " + tArtName);
+                collisionList.add([rArtName, tArtName]);
+            }
+
+            //remove the compared part, whatever left in rManDict will be new files we need to add to tMan
+            delete rManDict[oneKey];
+        }
+    }
+
+    //FIXME: may need to change the command, not just copy... do this for now..
+    // whatever left in rManDict will be new files we need to add to tManFile
+    for(let tempKey in rManDict){
+        console.log("keys left: " + tempKey);
+        overAllManRecord = overAllManRecord + rManFullRecordDict[tempKey] + "\n";
+    }
+
+
+
+}
 
 //save the files status to the repo at that specific moment to the repo
 app.get('/checkin', (req, res) =>{
