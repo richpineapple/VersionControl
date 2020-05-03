@@ -344,7 +344,7 @@ app.get('/createrepo', (req, res) =>{
         return;
 
     }
-
+    
     //date and time for names for .man file
     var manCounter = new Date();
     var manFileName = ".man-" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
@@ -551,6 +551,44 @@ var getAllBaseName = function(dir){
     return allBaseNames;
 };
 
+app.get('/mergeOut', function(req, res){
+    res.sendFile(path.join(htmlsFolder, 'mergeOut.html'))
+    var sourcePath = req.query.Folder1;
+    var targetPath = req.query.Folder2;
+    var targetFolder = req.query.TargetFolder;
+
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!sourcePath || !targetPath || !targetFolder){
+        return ;
+    }
+
+    if (isPathValid(sourcePath))
+    {
+        console.log(sourcePath + " source path is valid");
+    }
+    if (isPathValid(targetPath))
+    {
+        console.log(targetPath + "target path is valid");
+    }
+    /*
+    //this line is important, because when first loaded, the code will
+    //wait for user input and code will keep running, which is not wanted
+    if(!sourcePath || !targetPath){
+        return ;
+    }
+
+    //check if both path are valid..
+    if (!filesystem.existsSync(sourcePath) || !filesystem.existsSync(targetPath)){
+        console.log("---------Input error");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        res.send("input error, check your input");
+        return;
+
+    }
+    */
+;
+});
 
 
 //do the scan part
@@ -579,6 +617,20 @@ var getAllFilesFromFolder = function(dir) {
 
 };
 
+function isPathValid(path)
+{
+    if (filesystem.existsSync(path))
+    {
+        console.log(path + " is valid");
+        //res.sendFile(path.join(htmlsFolder, "inputError.html"));
+        return true;
+    }
+    else 
+    {
+        console.log("Path does not exist")
+        return false;
+    }
+}
 
 
 
