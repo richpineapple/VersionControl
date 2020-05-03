@@ -351,12 +351,10 @@ app.get('/merge', (req, res) => {
     var targetProjectPath = req.query.targetProjectPath;
 
     if (!filesystem.existsSync(repoPath)){
-        res.send("repo path not exist: " + repoPath);
         return;
     }
 
     if(!filesystem.existsSync(targetProjectPath)){
-        res.send("target project path not exist: " + repoPath)
         return;
     }
 
@@ -398,12 +396,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
     var overAllManRecord = "";
     var tManDict = {};
+    var tManFullRecordDict = {};
     //FIXME: remember to save to the man file at some point later
     allFilesPath.forEach(function(oneFilePath){
         var oneManRecord = getArtNameAndSave(oneFilePath, tBaseFolder, repoPath, today, "merge" );
         var tempList = oneManRecord.split("\t");
         //key: relative path,   value: result art name
         tManDict[tempList[1]] = tempList[0];
+        tManFullRecordDict[tempList[1]] = oneManRecord;
         overAllManRecord = overAllManRecord + oneManRecord;
     });
 
@@ -424,11 +424,10 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //compare the tManDict and rManDict to check the collisions
         //list of list, [rArtName, tArtName]
     var collisionList = [];
-    console.log("dict in rMandict: " + rManDict);
+    //--CONDITION ONE: if art name is the same, then we just replace/ignore
     for(let oneKey in tManDict){
         if(rManDict.hasOwnProperty(oneKey)){
             console.log("repeat: " + oneKey);
-            //if art name is the same, then we just replace
             var rArtName = rManDict[oneKey];
             var tArtName = tManDict[oneKey];
 
@@ -436,7 +435,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
                 console.log("same name: " + rArtName);
             }else{
                 console.log("different art name: " + rArtName + ", " + tArtName);
-                collisionList.add([rArtName, tArtName]);
+                collisionList.push([rArtName, tArtName, oneKey]);
             }
 
             //remove the compared part, whatever left in rManDict will be new files we need to add to tMan
@@ -444,16 +443,71 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         }
     }
 
+    //--CONDITION TWO: if has extra files that don't collide, copy it
     //FIXME: may need to change the command, not just copy... do this for now..
     // whatever left in rManDict will be new files we need to add to tManFile
     for(let tempKey in rManDict){
-        console.log("keys left: " + tempKey);
-        overAllManRecord = overAllManRecord + rManFullRecordDict[tempKey] + "\n";
+        //console.log("keys left: " + tempKey);
+        overAllManRecord = overAllManRecord + rManFullRecordDict[tempKey].replace("checkin", "merge") + "\n";
+    }
+
+    //FIXME: not finished
+    //--CONDITION THREE: if same artname and path, and collide
+    for(let i = 0; i < collisionList.length; i++){
+        //var tempRCollidedFileName = collisionList[i][2];
+        //var tempRNameList = tempRCollidedFileName.split(".");
+        //var resultRFileName = tempRNameList[0] + "_MR" + "." + tempRNameList[1];
+
+        //var tempTCollidedFileName = collisionList[i][2];
+        //var tempTNameList = tempTCollidedFileName.split(".");
+        //var resultTFileName = tempTNameList[0] + "_MT" + "." + tempTNameList[1];
+
+        //need to get its path first
+
+        var tempTOrgPath = path.join(path.dirname(tPath), collisionList[i][2]);
+        var tempSameNameList = path.basename(collisionList[i][2]).split(".");
+        var resultRFileName = tempSameNameList[0] + "_MR" + "." + tempSameNameList[1];
+        var resultTFileName = tempSameNameList[0] + "_MT" + "." + tempSameNameList[1];
+
+        //copy rCollided file to target with modified name
+        copyFileTo(path.join(repoPath, collisionList[i][0]), path.join(tPath, resultRFileName));
+
+        //rename the tCollided file in the target
+        //console.log("the temp target path.. " + tempTargetPath);
+        filesystem.rename(tempTOrgPath, path.join(tPath, resultTFileName), (err)=>{
+            if(err){
+                console.log("renaming failed.");
+            }else{
+                console.log("Done with renaming for collisions");
+            }
+
+        });
+
+        //copy the parent collided file with modified name
     }
 
 
 
+
+
+
+    //save the man file
+    filesystem.access(repoTManLocation, (err)=>{
+        if(err){
+            filesystem.writeFile(repoTManLocation, overAllManRecord, (err)=>{
+                if(err){
+                    console.log("save overallManrecord failed..");
+                    return
+                }
+
+                //copy the man file to target
+                copyFileTo(repoTManLocation, path.join(tPath, repoTManName));
+            })
+        }
+    })
+
 }
+
 
 //save the files status to the repo at that specific moment to the repo
 app.get('/checkin', (req, res) =>{
@@ -689,7 +743,7 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
     filesystem.writeFileSync(path.join(targetPath, artID), content);
 
     //step 5: save to the manifest file
-    var commandRecord = " " + command +"(" + file + ", " + path.join(targetPath, artID) + ") ";
+    var commandRecord = "" + command +"(" + file + ", " + path.join(targetPath, artID) + ")";
     var manifestRecord = artID + "\t"+ relativePathStr+"\t"+ today +"\t"+ commandRecord+"\n";
 
 
