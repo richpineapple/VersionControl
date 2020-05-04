@@ -431,6 +431,43 @@ var getLatestMan = function(path, manPref){
     return latestManFileName;
 }
 
+
+//left will the checkinman file, right
+var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
+    var manHisPath = path.join(repoPath, manHistroyFileName);
+    var historyLines = filesystem.readFileSync(repoPath, "utf-8").split("\n").filter(Boolean);
+    var historyDict = {};
+
+    //read into dictionar first
+    for(let i = 0; i < historyLines.length; i++){
+        var currentLinePair = historyLines[i].split(":");
+        var key = currentLinePair[0];
+        var parent = currentLinePair[1].split(",")[0];
+        historyDict[key] = parent;
+    }
+
+    var maxSerach = historyLines.length + 10;
+    var count = 0;
+
+    var leftParent = checkinManName;
+    var rightParent = historyDict[checkOutManName];
+
+    while(true){
+        if(count > maxSerach){
+            console.log("common ancestor not found");
+            return "";
+        }
+        if(leftParent == rightParent){
+            return leftParent;
+        }else{
+            leftParent = historyDict[leftParent];
+            rightParent = historyDict[rightParent];
+        }
+
+        count = count + 1;
+    }
+}
+
 var mergeOut = function(tPath, repoPath, repoManPath){
 
     //first, do the checkin
@@ -503,9 +540,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //--CONDITION THREE: if same artname and path, and collide
 
 
-    //find the common ancestor
+    //--find the common ancestor
+    var targetLastCheckOut = getLatestMan(tPath, checkOutManPref);
+    var commonAncestorMan = findCommonAncestorMan(repoPath, path.basename(repoManPath),targetLastCheckOut);
 
-    var latestManFileName = getLatestMan(repoPath, checkInManPref);
+    //now we have the name of the man file of the common ancestor
+
+
+    //var latestManFileName = getLatestMan(repoPath, checkInManPref);
 
 
     for(let i = 0; i < collisionList.length; i++){
