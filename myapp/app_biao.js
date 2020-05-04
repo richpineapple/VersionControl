@@ -35,6 +35,9 @@ var checkInManPref =  ".man-000";
 var checkOutManPref = ".man-111";
 var mergeManPref = ".man-222";
 
+//needed to record the path of the version changes
+var manHistroyFileName = ".ManHistory.rc";
+
 //list the .man files and their corresponding labels in the target repo
 app.get("/listLabels", function(req, res){
     res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
@@ -338,6 +341,19 @@ app.get('/checkout', (req, res) =>{
         }
     });
 
+    //write to the record
+    var tempHisToWrite = manFileName + ":" + actualManFileName + "," + manFileName + "\n";
+
+    var manHisFilePath = path.join(sourceRepoPath, manHistroyFileName);
+    filesystem.appendFile(manHisFilePath, tempHisToWrite, (err)=>{
+        if(err){
+            console.log("append the man history failed.");
+            return;
+        }
+
+        console.log("append to man history success: " + tempHisToWrite);
+    });
+
 
 
 });
@@ -383,6 +399,38 @@ app.get('/merge', (req, res) => {
 
 })
 
+//var getLatestCheckOutMan = function(path, manPref){
+var getLatestMan = function(path, manPref){
+
+    var allFilesInTarget = getAllFilesFromFolder(path);
+    var allFileBaseName = getAllBaseName_List(allFilesInTarget);
+
+    var latestManFileName = "";
+    var latestManFileVal = 0;
+
+    //loop through all the filename in the target folder, only need check in man files
+    for(let i = 0; i < allFileBaseName.length; i++){
+        var currentFileName = allFileBaseName[i];
+        if(currentFileName.includes(manPref)){
+            var tempAfterSplit = currentFileName.split(".")[1];
+            var tempCurrentVal= parseInt(tempAfterSplit.slice(manPref.length-1, tempAfterSplit.length));
+
+            console.log("current fileName: " + currentFileName);
+            console.log("current val: " + tempCurrentVal + ", lastval: " + latestManFileVal);
+            if(tempCurrentVal > latestManFileVal){
+                latestManFileVal = tempCurrentVal;
+                latestManFileName = currentFileName;
+            }
+        }
+
+    }
+
+    console.log("==================================");
+    console.log("returning last man file with pref " + manPref +" : " + latestManFileName);
+    console.log("==================================");
+    return latestManFileName;
+}
+
 var mergeOut = function(tPath, repoPath, repoManPath){
 
     //first, do the checkin
@@ -427,12 +475,12 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //--CONDITION ONE: if art name is the same, then we just replace/ignore
     for(let oneKey in tManDict){
         if(rManDict.hasOwnProperty(oneKey)){
-            console.log("repeat: " + oneKey);
+            //console.log("repeat: " + oneKey);
             var rArtName = rManDict[oneKey];
             var tArtName = tManDict[oneKey];
 
             if(rArtName == tArtName){
-                console.log("same name: " + rArtName);
+                //console.log("same name: " + rArtName);
             }else{
                 console.log("different art name: " + rArtName + ", " + tArtName);
                 collisionList.push([rArtName, tArtName, oneKey]);
@@ -453,15 +501,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
     //FIXME: not finished
     //--CONDITION THREE: if same artname and path, and collide
+
+
+    //find the common ancestor
+
+    var latestManFileName = getLatestMan(repoPath, checkInManPref);
+
+
     for(let i = 0; i < collisionList.length; i++){
-        //var tempRCollidedFileName = collisionList[i][2];
-        //var tempRNameList = tempRCollidedFileName.split(".");
-        //var resultRFileName = tempRNameList[0] + "_MR" + "." + tempRNameList[1];
-
-        //var tempTCollidedFileName = collisionList[i][2];
-        //var tempTNameList = tempTCollidedFileName.split(".");
-        //var resultTFileName = tempTNameList[0] + "_MT" + "." + tempTNameList[1];
-
         //need to get its path first
 
         var tempTOrgPath = path.join(path.dirname(tPath), collisionList[i][2]);
@@ -484,6 +531,20 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         });
 
         //copy the parent collided file with modified name
+        //get all the checkout man files and get the lastest one (which will track back to the parent)
+
+        //int the tProjectFolder, get the lastesst checkout man file, then get the parent version of that file
+
+
+
+
+
+
+
+
+
+
+
     }
 
 
@@ -508,6 +569,25 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
 }
 
+app.get('/test', (req, res)=>{
+    var tempDict = {"create repo man: " : [{"check in man1" : []}, {"check in man2":[]}, {"check out man1" : []}, {"check out man2":[]} ]};
+
+    //var tempDict = {"create repo man" : ["data1", "data2", "data3"]};
+    var dictString = JSON.stringify(tempDict);
+    console.log("string: " + dictString);
+    filesystem.writeFile("test.json", dictString, (err)=>{
+        if(err){
+            console.log("write dict failed");
+            return;
+        }else{
+            console.log("json file created..");
+            return;
+        }
+
+    });
+
+    res.send("finished");
+});
 
 //save the files status to the repo at that specific moment to the repo
 app.get('/checkin', (req, res) =>{
@@ -577,6 +657,35 @@ app.get('/checkin', (req, res) =>{
         }
     });
 
+
+
+    //write to the record
+    //var tempHisToWrite = manFileName + ":" + actualManFileName + "," + manFileName + "\n";
+    //FIXME: not finished.
+    var manHisFilePath = path.join(targetPath, manHistroyFileName);
+
+    //to find the parent
+    //---1st, find the latest checkout man file in the target (if check in from the same folder as create repo)
+    var lastCheckOutManName = getLatestMan(sourcePath, checkOutManPref);
+
+    //2nd, if failed, user the create repo man file (if check in from the same folder as create repo)
+    if(lastCheckOutManName.length == 0){
+        var lines = filesystem.readFileSync(manHisFilePath, 'utf-8').split("\n").filter(Boolean);
+        lastCheckOutManName = lines[0].split(":")[0];
+    }
+
+
+    var tempHisToWrite = manFileName + ":" + lastCheckOutManName + "," + manFileName + "\n";
+
+
+    filesystem.appendFile(manHisFilePath, tempHisToWrite, (err)=>{
+        if(err){
+            console.log("append the man history failed.");
+            return;
+        }
+
+        console.log("append to man history success: " + tempHisToWrite);
+    });
 
 
 });
@@ -669,6 +778,18 @@ app.get('/createrepo', (req, res) =>{
         }
     });
 
+    //take care of the record for later use
+
+    var manHisFilePath = path.join(targetPath, manHistroyFileName);
+    var historyToWrite = manFileName + ":" + manFileName + "\n";
+    filesystem.writeFile(manHisFilePath, historyToWrite, (err)=>{
+        if(err){
+            console.log("err when write to man history: " + err);
+            return;
+        }
+
+        console.log("man history added: " + historyToWrite);
+    })
 
 
 });
