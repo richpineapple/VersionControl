@@ -394,7 +394,9 @@ app.get('/merge', (req, res) => {
 
     //FIXME:
     //1st: mergeout..
-    mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
+    //if autoMergeIn = true, we do it, else, user do it on their own
+    var autoMergeIn = mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
+
 
 
 })
@@ -476,25 +478,12 @@ var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
     }
 
     console.log("XXXXXX---common ancestor failed..");
-    /*
-    while(true){
-        if(count > maxSerach){
-            console.log("common ancestor not found");
-            return "";
-        }
-        if(leftParent == rightParent){
-            return leftParent;
-        }else{
-            leftParent = historyDict[leftParent];
-            rightParent = historyDict[rightParent];
-        }
-
-        count = count + 1;
-    }
-    */
 }
 
 var mergeOut = function(tPath, repoPath, repoManPath){
+
+    //if grandma is needed for the collision, then set to false, let use mergein on their own
+    var autoMergeIn = true;
 
     //first, do the checkin
     var repoTManName = getMergeManName();
@@ -510,12 +499,15 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     var tManFullRecordDict = {};
     //FIXME: remember to save to the man file at some point later
     allFilesPath.forEach(function(oneFilePath){
-        var oneManRecord = getArtNameAndSave(oneFilePath, tBaseFolder, repoPath, today, "merge" );
-        var tempList = oneManRecord.split("\t");
-        //key: relative path,   value: result art name
-        tManDict[tempList[1]] = tempList[0];
-        tManFullRecordDict[tempList[1]] = oneManRecord;
-        overAllManRecord = overAllManRecord + oneManRecord;
+        var oneManRecord = getArtNameAndSave(oneFilePath, tBaseFolder, repoPath, today, "mergeout", false);
+        if(oneManRecord.length > 0){
+            var tempList = oneManRecord.split("\t");
+            //key: relative path,   value: result art name
+            tManDict[tempList[1]] = tempList[0];
+            tManFullRecordDict[tempList[1]] = oneManRecord;
+
+            //overAllManRecord = overAllManRecord + oneManRecord;
+        }
     });
 
     //step two: deal with conflicts
@@ -550,6 +542,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         pManDict[pathPart] = temp[0];
     });
 
+    overAllManRecord = "GrandMa Manifest File: " + pManFilePath + "\n";
 
 
 
@@ -564,10 +557,17 @@ var mergeOut = function(tPath, repoPath, repoManPath){
             var tArtName = tManDict[oneKey];
 
             if(rArtName == tArtName){
-                //console.log("same name: " + rArtName);
+                var relativePath = path.join(path.basename(repoPath), rArtName);
+                var fromPath = path.join(repoPath, rArtName);
+                var toPath = path.join(path.dirname(tPath), relativePath);
+                var oneManRecord = rArtName + "\t" + relativePath+"\t"+ getTodayForMan()+"\t"+ "mergeout("+ fromPath +","+ toPath +")" + "\n";
+                overAllManRecord = overAllManRecord + oneManRecord;
             }else{
                 console.log("different art name: " + rArtName + ", " + tArtName);
                 collisionList.push([rArtName, tArtName, oneKey]);
+
+                //IMPORTANT: then user need to merge in on their own
+                autoMergeIn = false;
             }
 
             //remove the compared part, whatever left in rManDict will be new files we need to add to tMan
@@ -579,8 +579,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //FIXME: may need to change the command, not just copy... do this for now..
     // whatever left in rManDict will be new files we need to add to tManFile
     for(let tempKey in rManDict){
-        //console.log("keys left: " + tempKey);
-        overAllManRecord = overAllManRecord + rManFullRecordDict[tempKey].replace("checkin", "merge") + "\n";
+        var tempArtName = rManDict[tempKey];
+        var newArtFilePath = path.join(repoPath, rManDict[tempKey]);
+        var copyToPath = path.join(tPath, path.basename(tempKey));
+        //var tempRelativePath = path.join(path.dirname(newArtFilePath), rManDict[tempKey]);
+        var tempRelativePath = path.join(path.basename(repoPath), tempArtName);
+        copyFileTo(newArtFilePath, copyToPath);
+        //overAllManRecord = overAllManRecord + rManFullRecordDict[tempKey].replace("checkin", "merge") + "\n";
+        overAllManRecord = overAllManRecord + tempArtName + "\t" + tempRelativePath+ "\t" + getTodayForMan() + "\t" + "++mergeOut("+newArtFilePath+","+copyToPath + ")\n"
     }
 
     //FIXME: not finished
@@ -599,20 +605,25 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         var tempSameNameList = path.basename(collisionList[i][2]).split(".");
 
         var resultRFileName = tempSameNameList[0] + "_MR" + "." + tempSameNameList[1];
-        var resultTFileName = tempSameNameList[0] + "_MT" + "." + tempSameNameList[1];
-        var resultGFileName = tempSameNameList[0] + "_MG" + "." + tempSameNameList[1];
-
+        var mrFrom =path.join(repoPath, collisionList[i][0]);
+        var mrTo =path.join(tPath, resultRFileName);
+        var mrArtName = collisionList[i][0];
+        var mrRelativePath = path.join(path.basename(repoPath), mrArtName);
         //copy rCollided file to target with modified name
-        copyFileTo(path.join(repoPath, collisionList[i][0]), path.join(tPath, resultRFileName));
+        //copyFileTo(path.join(repoPath, collisionList[i][0]), path.join(tPath, resultRFileName));
+        copyFileTo(mrFrom, mrTo);
+        overAllManRecord = overAllManRecord + mrArtName+ "\t" + mrRelativePath + "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mrFrom+","+mrTo+ ")\n"
 
-        //copy the grandMa file
-        //art path part:
-        var artPathPart = collisionList[i][0].split(".")[0].split("-")[0];
-        copyFileTo(path.join(repoPath, pManDict[artPathPart]), path.join(tPath, resultGFileName));
-
+        var resultTFileName = tempSameNameList[0] + "_MT" + "." + tempSameNameList[1];
+        var mtFrom = tempTOrgPath;
+        var mtTo =  path.join(tPath, resultTFileName);
+        var mtArtName = collisionList[i][1];
+        var mtRelativePath = path.join(path.basename(repoPath), mtArtName);
+        overAllManRecord = overAllManRecord + mtArtName+ "\t" + mtRelativePath+ "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mtFrom+","+mtTo+ ")\n"
         //rename the tCollided file in the target
         //console.log("the temp target path.. " + tempTargetPath);
-        filesystem.rename(tempTOrgPath, path.join(tPath, resultTFileName), (err)=>{
+        //filesystem.rename(tempTOrgPath, path.join(tPath, resultTFileName), (err)=>{
+        filesystem.rename(mtFrom, mtTo, (err)=>{
             if(err){
                 console.log("renaming failed.");
             }else{
@@ -620,6 +631,23 @@ var mergeOut = function(tPath, repoPath, repoManPath){
             }
 
         });
+
+
+        var resultGFileName = tempSameNameList[0] + "_MG" + "." + tempSameNameList[1];
+
+        //copy the grandMa file
+        //art path part:
+        var artPathPart = collisionList[i][0].split(".")[0].split("-")[0];
+        var mgArtName = pManDict[artPathPart]
+        var mgRelativePath = path.join(path.basename(repoPath), mgArtName);
+        var mgFrom =path.join(repoPath, mgArtName);
+        var mgTo =path.join(tPath, resultGFileName);
+        //copyFileTo(path.join(repoPath, pManDict[artPathPart]), path.join(tPath, resultGFileName));
+        copyFileTo(mgFrom, mgTo);
+        //overAllManRecord = overAllManRecord + tempArtName + "\t" + tempRelativePath+ "\t" + getTodayForMan() + "\t" + "++mergeOut("+newArtFilePath+","+copyToPath + ")\n"
+        //add the three records to overall record
+        overAllManRecord = overAllManRecord + mgArtName+ "\t" + mgRelativePath + "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mgFrom+","+mgTo+ ")\n"
+
 
         //copy the parent collided file with modified name
         //get all the checkout man files and get the lastest one (which will track back to the parent)
@@ -629,13 +657,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
 
 
-
-
-
-
-
-
-
+        return autoMergeIn;
     }
 
 
@@ -727,7 +749,7 @@ app.get('/checkin', (req, res) =>{
     var overallManRecord = "";
     //loop over all the files with their paths, and given them art names and save
     results.forEach(function(file){
-        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin");
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin", true);
         overallManRecord += oneManRecord;
     });
 
@@ -847,7 +869,7 @@ app.get('/createrepo', (req, res) =>{
     var overallManRecord = "";
     //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
-        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "createrepo");
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "createrepo", true);
         overallManRecord += oneManRecord;
     });
 
@@ -885,13 +907,14 @@ app.get('/createrepo', (req, res) =>{
 
 });
 
-//calculate the artID and then save to  target folder
-var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
+//var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
+var getArtName = function(file, sourceBaseFolder, targetPath, today, command){
+
     var checkSumNumLoop = [1, 7, 3, 11];
     //ignore dot files
     if (path.basename(file).charAt(0) === "."){
         console.log("file is dot file: " + file);
-        return "";
+        return [];
     }
 
     var stat = filesystem.statSync(file);
@@ -948,11 +971,27 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
     var origianlExtension = path.basename(file).split(".").pop();
     artID = artID + "." + origianlExtension;
 
+    return [artID, content, relativePathStr];
+}
+
+//calculate the artID and then save to  target folder
+//var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
+var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command, save){
+
+
+    var tempResult = getArtName(file, sourceBaseFolder, targetPath, today, command);
+    if(tempResult.length == 0){
+        return "";
+    }
+    var artID = tempResult[0];
+    var content = tempResult[1];
+    var relativePathStr = tempResult[2];
 
 
     //then do the save, copy file from source to the target folder with as file with new ARTID name
-    console.log("try to save to repo: " + file);
-    filesystem.writeFileSync(path.join(targetPath, artID), content);
+    if(save == true){
+        filesystem.writeFileSync(path.join(targetPath, artID), content);
+    }
 
     //step 5: save to the manifest file
     var commandRecord = "" + command +"(" + file + ", " + path.join(targetPath, artID) + ")";
