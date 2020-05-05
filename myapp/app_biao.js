@@ -33,7 +33,9 @@ app.set('view engine', 'ejs');
 //some necessary global variables
 var checkInManPref =  ".man-000";
 var checkOutManPref = ".man-111";
-var mergeManPref = ".man-222";
+//var mergeManPref = ".man-222";
+var mergeOutManPref = ".man-222";
+var mergeInManPref = ".man-333";
 
 //needed to record the path of the version changes
 var manHistroyFileName = ".ManHistory.rc";
@@ -70,7 +72,8 @@ app.get("/listLabels", function(req, res){
 
     //loop through all the filename in the target folder, only need check in man files
     for(let i = 0; i < allFileBaseName.length; i++){
-        if(allFileBaseName[i].includes(checkInManPref)){
+        if(allFileBaseName[i].includes(checkInManPref) || allFileBaseName[i].includes(mergeInManPref)){
+        //if(allFileBaseName[i].includes(mergeInManPref)){
             allManBaseName.push(allFileBaseName[i]);
         }
     }
@@ -87,7 +90,8 @@ app.get("/listLabels", function(req, res){
         //key: man file name, value: empty list for now
         //so man files with no lables will also be displayed
         for(let k = 0; k < allManBaseName.length; k++){
-            resultDict[allFileBaseName[k]] = [];
+            //resultDict[allFileBaseName[k]] = [];
+            resultDict[allManBaseName[k]] = [];
         }
 
 
@@ -109,6 +113,11 @@ app.get("/listLabels", function(req, res){
             }else{
                 resultDict[manOrgName] = manLabelsList;
             }
+        }
+
+
+        for(let tempKey in resultDict){
+            console.log("current key: " + tempKey + " : " + resultDict[tempKey]);
         }
 
         //pass the man:[labels] relationship to the template to display
@@ -184,9 +193,18 @@ var getCheckOutManName = function(){
     return manFileName;
 }
 
-var getMergeManName = function(){
+//var getMergeManName = function(){
+var getMergeOutManName = function(){
     var manCounter = new Date();
-    var manFileName = mergeManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    var manFileName = mergeOutManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
+    return manFileName;
+
+}
+
+//merge in and check in have the same man pref
+var getMergeInManName = function(){
+    var manCounter = new Date();
+    var manFileName = mergeInManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
     return manFileName;
 
 }
@@ -358,6 +376,19 @@ app.get('/checkout', (req, res) =>{
 
 });
 
+app.get("/mergein", (req, res)=>{
+    //now we get 2 user input
+    res.sendFile(htmlsFolder + "mergein.html");
+    var sourcePath = req.query.sourcePath;
+    var targetPath = req.query.targetPath;
+
+    var result = checkInOrMerge(sourcePath, targetPath, "mergein", res)
+    if(result < 0 ){
+        console.log("something");
+    }else{
+        console.log("merge in success");
+    }
+})
 
 app.get('/merge', (req, res) => {
     res.sendFile(path.join(htmlsFolder, "merge.html"))
@@ -396,6 +427,16 @@ app.get('/merge', (req, res) => {
     //1st: mergeout..
     //if autoMergeIn = true, we do it, else, user do it on their own
     var autoMergeIn = mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
+
+    if(autoMergeIn == true){
+        var result = checkInOrMerge(targetProjectPath,repoPath, "mergein", res);
+        if(result < 0 ){
+            //res.send("something is wrong when: " + checkin);
+            console.log("error when merge in..");
+        }
+    }else{
+        res.send("Please handle the collision and then merge in on your own..")
+    }
 
 
 
@@ -486,7 +527,8 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     var autoMergeIn = true;
 
     //first, do the checkin
-    var repoTManName = getMergeManName();
+    //var repoTManName = getMergeManName();
+    var repoTManName = getMergeOutManName();
     var repoTManLocation = path.join(repoPath, repoTManName);
     var tBaseFolder = path.basename(tPath);
 
@@ -657,7 +699,6 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
 
 
-        return autoMergeIn;
     }
 
 
@@ -676,9 +717,12 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
                 //copy the man file to target
                 copyFileTo(repoTManLocation, path.join(tPath, repoTManName));
+                console.log("====saved merge out file..." + repoTManLocation);
             })
         }
     })
+
+    return autoMergeIn;
 
 }
 
@@ -709,25 +753,39 @@ app.get('/checkin', (req, res) =>{
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
 
+    var result = checkInOrMerge(sourcePath, targetPath, "checkin", res)
+    if(result < 0 ){
+        //res.send("something is wrong when: " + checkin);
+    }
+
+});
+
+
+var checkInOrMerge = function(sourcePath, targetPath, action, res){
+
     //this line is important, because when first loaded, the code will
     //wait for user input and code will keep running, which is not wanted
     if(!sourcePath || !targetPath){
-        return ;
+        return -1 ;
     }
 
     //check if both path are valid..
     if (!filesystem.existsSync(sourcePath)){
         res.send("source path not exist: " + sourcePath);
-        return;
+        return -1;
 
     }
     if (!filesystem.existsSync(targetPath)){
         res.send("target path not exist: " + targetPath);
-        return;
+        return -1;
 
     }
 
-    var manFileName = getCheckInManName();
+    if(action == "checkin"){
+        var manFileName = getCheckInManName();
+    }else{
+        var manFileName = getMergeInManName();
+    }
 
     var manLocation = path.join(targetPath, manFileName);
 
@@ -749,7 +807,7 @@ app.get('/checkin', (req, res) =>{
     var overallManRecord = "";
     //loop over all the files with their paths, and given them art names and save
     results.forEach(function(file){
-        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin", true);
+        var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, action, true);
         overallManRecord += oneManRecord;
     });
 
@@ -779,9 +837,19 @@ app.get('/checkin', (req, res) =>{
 
     //to find the parent
     //---1st, find the latest checkout man file in the target (if check in from the same folder as create repo)
-    var lastCheckOutManName = getLatestMan(sourcePath, checkOutManPref);
+    var lastCheckOutManName = "";
+    if(action == "checkin"){
+        lastCheckOutManName = getLatestMan(sourcePath, checkOutManPref);
+    }else{
+        //for merge in, its parent has to be the merge out snapshot
+        lastCheckOutManName = getLatestMan(sourcePath, mergeOutManPref);
+        if(lastCheckOutManName.length == 0){
+            res.send("failed to find the man file for merge out when creating relation with merge in");
+            return -1;
+        }
+    }
 
-    //2nd, if failed, user the create repo man file (if check in from the same folder as create repo)
+    //2nd, if failed, user then use create repo man file (if check in from the same folder as create repo)
     if(lastCheckOutManName.length == 0){
         var lines = filesystem.readFileSync(manHisFilePath, 'utf-8').split("\n").filter(Boolean);
         lastCheckOutManName = lines[0].split(":")[0];
@@ -800,9 +868,9 @@ app.get('/checkin', (req, res) =>{
         console.log("append to man history success: " + tempHisToWrite);
     });
 
+    return 0;
 
-});
-
+};
 
 
 //this is the first step for the version control, create a repo and the first version of the snapshot of the project
