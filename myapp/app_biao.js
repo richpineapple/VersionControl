@@ -435,7 +435,7 @@ var getLatestMan = function(path, manPref){
 //left will the checkinman file, right
 var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
     var manHisPath = path.join(repoPath, manHistroyFileName);
-    var historyLines = filesystem.readFileSync(repoPath, "utf-8").split("\n").filter(Boolean);
+    var historyLines = filesystem.readFileSync(manHisPath, "utf-8").split("\n").filter(Boolean);
     var historyDict = {};
 
     //read into dictionar first
@@ -450,8 +450,33 @@ var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
     var count = 0;
 
     var leftParent = checkinManName;
+    var leftParentList = [];
+    var tempPrev = leftParent;
+    while(true){
+        var tempParent = historyDict[leftParent];
+        leftParentList.push(tempParent);
+        if(tempParent == tempPrev){
+            break;
+        }
+        tempPrev =tempParent;
+    }
+
+    //convert to checkin man file, becase left is a check in man file
     var rightParent = historyDict[checkOutManName];
 
+    for(let j = 0; j < leftParentList.length; j++){
+
+        for(let k = 0; k < leftParentList.length; k++){
+            if(leftParentList[k] == rightParent){
+                return rightParent;
+            }
+        }
+
+        rightParent = historyDict[rightParent];
+    }
+
+    console.log("XXXXXX---common ancestor failed..");
+    /*
     while(true){
         if(count > maxSerach){
             console.log("common ancestor not found");
@@ -466,6 +491,7 @@ var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
 
         count = count + 1;
     }
+    */
 }
 
 var mergeOut = function(tPath, repoPath, repoManPath){
@@ -499,12 +525,33 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //if has more files than tManFile, add the extra man record line
     var rManFullRecordDict = {};
     var rManFileLines = filesystem.readFileSync(repoManPath, "utf-8").split("\n").filter(Boolean);
+
     rManFileLines.forEach(function(oneLine){
         var temp = oneLine.split("\t");
         //key: relative path,  value: art name
         rManDict[temp[1]] = temp[0];
         rManFullRecordDict[temp[1]] = oneLine;
     });
+
+    //--find the common ancestor
+    var targetLastCheckOut = getLatestMan(tPath, checkOutManPref);
+    var commonAncestorMan = findCommonAncestorMan(repoPath, path.basename(repoManPath),targetLastCheckOut);
+
+    //now we have the name of the man file of the common ancestor
+    //read the man file into
+    var pManFilePath = path.join(repoPath, commonAncestorMan);
+    var pManFileLines = filesystem.readFileSync(pManFilePath, "utf-8").split("\n").filter(Boolean);
+    var pManDict = {};
+    pManFileLines.forEach(function(oneLine){
+        var temp = oneLine.split("\t");
+        //key: art name path part, value: full art name
+        //pManDict[temp[1]] = temp[0];
+        var pathPart = temp[0].split(".")[0].split("-")[0];
+        pManDict[pathPart] = temp[0];
+    });
+
+
+
 
     //compare the tManDict and rManDict to check the collisions
         //list of list, [rArtName, tArtName]
@@ -540,11 +587,6 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //--CONDITION THREE: if same artname and path, and collide
 
 
-    //--find the common ancestor
-    var targetLastCheckOut = getLatestMan(tPath, checkOutManPref);
-    var commonAncestorMan = findCommonAncestorMan(repoPath, path.basename(repoManPath),targetLastCheckOut);
-
-    //now we have the name of the man file of the common ancestor
 
 
     //var latestManFileName = getLatestMan(repoPath, checkInManPref);
@@ -555,11 +597,18 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
         var tempTOrgPath = path.join(path.dirname(tPath), collisionList[i][2]);
         var tempSameNameList = path.basename(collisionList[i][2]).split(".");
+
         var resultRFileName = tempSameNameList[0] + "_MR" + "." + tempSameNameList[1];
         var resultTFileName = tempSameNameList[0] + "_MT" + "." + tempSameNameList[1];
+        var resultGFileName = tempSameNameList[0] + "_MG" + "." + tempSameNameList[1];
 
         //copy rCollided file to target with modified name
         copyFileTo(path.join(repoPath, collisionList[i][0]), path.join(tPath, resultRFileName));
+
+        //copy the grandMa file
+        //art path part:
+        var artPathPart = collisionList[i][0].split(".")[0].split("-")[0];
+        copyFileTo(path.join(repoPath, pManDict[artPathPart]), path.join(tPath, resultGFileName));
 
         //rename the tCollided file in the target
         //console.log("the temp target path.. " + tempTargetPath);
