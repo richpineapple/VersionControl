@@ -1,9 +1,0 @@
-Merge Out
-- Arguments Needed:
-	1. the repo 
-	2. a repo source snapshot = R snapshot (manifest file and files uploaded)
-	3. a target project tree folder
-First step for Merge-out should be to automatically check in target folder. 
-	- That target snapshot is called the "repoT" snapshot with special file name.
-Next step would then add new files/folders from R snap (the repo) to that target tree folder with special file name.
-	- 
