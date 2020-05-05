@@ -458,8 +458,6 @@ var getLatestMan = function(path, manPref){
             var tempAfterSplit = currentFileName.split(".")[1];
             var tempCurrentVal= parseInt(tempAfterSplit.slice(manPref.length-1, tempAfterSplit.length));
 
-            console.log("current fileName: " + currentFileName);
-            console.log("current val: " + tempCurrentVal + ", lastval: " + latestManFileVal);
             if(tempCurrentVal > latestManFileVal){
                 latestManFileVal = tempCurrentVal;
                 latestManFileName = currentFileName;
@@ -623,7 +621,8 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     for(let tempKey in rManDict){
         var tempArtName = rManDict[tempKey];
         var newArtFilePath = path.join(repoPath, rManDict[tempKey]);
-        var copyToPath = path.join(tPath, path.basename(tempKey));
+        //var copyToPath = path.join(tPath, path.basename(tempKey));
+        var copyToPath = path.join(path.dirname(tPath), tempKey);
         //var tempRelativePath = path.join(path.dirname(newArtFilePath), rManDict[tempKey]);
         var tempRelativePath = path.join(path.basename(repoPath), tempArtName);
         copyFileTo(newArtFilePath, copyToPath);
@@ -981,7 +980,7 @@ var getArtName = function(file, sourceBaseFolder, targetPath, today, command){
     var checkSumNumLoop = [1, 7, 3, 11];
     //ignore dot files
     if (path.basename(file).charAt(0) === "."){
-        console.log("file is dot file: " + file);
+        //console.log("file is dot file: " + file);
         return [];
     }
 
@@ -1077,6 +1076,15 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
 //so the file will be updated and will keep copying after main loop exit
 var copyFileTo = function(from, to){
 
+    //create dir if it doesnt exist
+    filesystem.mkdirSync(path.dirname(to), {recursive: true}, (error) =>{
+        if(error){
+            console.log("error when creating: ", error ," : ", currentTargetDir);
+        }else{
+        }
+    });
+
+    //then do the copy
     filesystem.copyFile(from, to, (err) => {
         if(err) throw err;
         console.log("copied " + from + " , to " + to );
