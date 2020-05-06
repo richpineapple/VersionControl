@@ -11,29 +11,28 @@ Enable the user to Check-in their project to save the status of it at that momen
 Enable the user to Check-out, or download a specific version someone checked in earlier, with the help of the specific Manifest file
 Enable the user to Add Labels for a Manifest file in a given project repo, so it will works like a nick name when user check out
 Enable the user to List All The Labels that already assigned to the Manifest files
+
+Enable the user to merge different snapshots
 */
 
 
-//important, for man file: man file name with prefix of .man-000 is in, with prefix of .man-111 is out
 const express = require('express');
 const app = express();
 const port = 3000;
 //for dealing with file paths
 const path = require("path");
 
-
 const filesystem = require("fs");
 const htmlsFolder = path.join(__dirname, "htmlFiles/");
-const version = 8;
+const version = 9;
 
-//template part
+//for the template part
 app.set('view engine', 'ejs');
 
 
 //some necessary global variables
 var checkInManPref =  ".man-000";
 var checkOutManPref = ".man-111";
-//var mergeManPref = ".man-222";
 var mergeOutManPref = ".man-222";
 var mergeInManPref = ".man-333";
 
@@ -63,17 +62,16 @@ app.get("/listLabels", function(req, res){
     //the result dictionary we will pass to the template
     var resultDict = {};
 
-    //record of man file name and their labels
+    //record file of man file name and their labels
     var manLabelsFilePath = path.join(targetRepo, ".manLabel.rc");
 
 
     var allFileBaseName = getAllBaseName_List(allFilesInTarget);
     var allManBaseName = [];
 
-    //loop through all the filename in the target folder, only need check in man files
+    //loop through all the filename in the target folder, only need check in or merge in man files
     for(let i = 0; i < allFileBaseName.length; i++){
         if(allFileBaseName[i].includes(checkInManPref) || allFileBaseName[i].includes(mergeInManPref)){
-        //if(allFileBaseName[i].includes(mergeInManPref)){
             allManBaseName.push(allFileBaseName[i]);
         }
     }
@@ -90,7 +88,6 @@ app.get("/listLabels", function(req, res){
         //key: man file name, value: empty list for now
         //so man files with no lables will also be displayed
         for(let k = 0; k < allManBaseName.length; k++){
-            //resultDict[allFileBaseName[k]] = [];
             resultDict[allManBaseName[k]] = [];
         }
 
@@ -180,20 +177,21 @@ var getFileNamesFromMan = function(manFilePath){
 
 
 
-
+//return the name of the man file  for check in
 var getCheckInManName = function(){
     var manCounter = new Date();
     var manFileName = checkInManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
     return manFileName;
 }
 
+//return the name of the man file for check out
 var getCheckOutManName = function(){
     var manCounter = new Date();
     var manFileName = checkOutManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
     return manFileName;
 }
 
-//var getMergeManName = function(){
+//return the name of man file for merge out
 var getMergeOutManName = function(){
     var manCounter = new Date();
     var manFileName = mergeOutManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
@@ -201,7 +199,7 @@ var getMergeOutManName = function(){
 
 }
 
-//merge in and check in have the same man pref
+//return the man file name for merge in
 var getMergeInManName = function(){
     var manCounter = new Date();
     var manFileName = mergeInManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
@@ -209,6 +207,7 @@ var getMergeInManName = function(){
 
 }
 
+//return the timestamp in the format we needed for man file name
 var getTodayForMan = function(){
     var today = new Date().toLocaleDateString(undefined,{
         day: '2-digit',
@@ -251,11 +250,12 @@ app.get('/checkout', (req, res) =>{
         return;
     }
 
+    //user may provide lable not the actual man name, so we need have have the label file ready
     var manLabelsFilePath = path.join(sourceRepoPath, ".manLabel.rc");
-
 
     var actualManFileName = "";
 
+    //find which man file the input label correspond to
     //if the label user provided is the original name
     if (filesystem.existsSync(path.join(sourceRepoPath,sourceManLabel))){
         actualManFileName = sourceManLabel;
@@ -270,38 +270,32 @@ app.get('/checkout', (req, res) =>{
         return;
     }
 
-    //find which man file the input label correspond to
 
     console.log("the acutal man file name: " , actualManFileName);
     var checkoutFromManPath = path.join(sourceRepoPath, actualManFileName);
     //now we have the abs path to the .man file the user want to use to check out
 
 
-    //check if what we found exist
+    //check if what we found (the man file) exist
     if(!filesystem.existsSync(checkoutFromManPath)){
         console.log("the check out from man file not exist: ", checkoutFromManPath);
         return;
     }
 
     //get the names of the files that we need to copy
-    //idx 0 is the artName so far, idx 1 is the original tree structure
+    //idx 0 is the artName so far, idx 1 is the original tree structure (relative path)
     var fileNameList = getFileNamesFromMan(checkoutFromManPath);
 
-    //FIXME: not sure, I guess this can be deleted, need to test for that
-    //create a folder with the same name as repo folder under the target folder
-    if(!filesystem.existsSync(targetPath)){
-        filesystem.mkdirSync(targetPath);
-    }
-
-    targetPath = path.join(targetPath, path.basename(sourceRepoPath));
 
     //target path = originalTargetPath + the base folder of the project
+    targetPath = path.join(targetPath, path.basename(sourceRepoPath));
+
     //so when I copy the man file, copy to under the base folder of the copy
     var targetManFilePath = path.join(targetPath, fileNameList[0][1].split("\\")[0]);
 
     var manFileName = getCheckOutManName();
 
-    //records the checkout details
+    //man file for check out
     var manLocation = path.join(sourceRepoPath, manFileName);
 
     //get the base folder of the sourcePath, because the .man record
@@ -359,7 +353,7 @@ app.get('/checkout', (req, res) =>{
         }
     });
 
-    //write to the record
+    //write to the record (parent child relationship for later use)
     var tempHisToWrite = manFileName + ":" + actualManFileName + "," + manFileName + "\n";
 
     var manHisFilePath = path.join(sourceRepoPath, manHistroyFileName);
@@ -376,6 +370,7 @@ app.get('/checkout', (req, res) =>{
 
 });
 
+//similar function like check in, different command name
 app.get("/mergein", (req, res)=>{
     //now we get 2 user input
     res.sendFile(htmlsFolder + "mergein.html");
@@ -384,12 +379,13 @@ app.get("/mergein", (req, res)=>{
 
     var result = checkInOrMerge(sourcePath, targetPath, "mergein", res)
     if(result < 0 ){
-        console.log("something");
+        console.log("something is wrong when mergein...");
     }else{
         console.log("merge in success");
     }
 })
 
+//merge two different snapshots
 app.get('/merge', (req, res) => {
     res.sendFile(path.join(htmlsFolder, "merge.html"))
 
@@ -397,6 +393,7 @@ app.get('/merge', (req, res) => {
     var repoManLabel = req.query.repoManLabel;
     var targetProjectPath = req.query.targetProjectPath;
 
+    //check if the paths are valid
     if (!filesystem.existsSync(repoPath)){
         return;
     }
@@ -408,6 +405,8 @@ app.get('/merge', (req, res) => {
     var manLabelsFilePath = path.join(repoPath, ".manLabel.rc");
     var actualManFileName = "";
 
+    //find the actual name of the man file (user may provide labels)
+    //use could give the exact man file name
     if(filesystem.existsSync(path.join(repoPath, repoManLabel)) ){
         actualManFileName = repoManLabel;
         //else look for original name in the man label file
@@ -423,9 +422,8 @@ app.get('/merge', (req, res) => {
 
     console.log("actual man file name: " + actualManFileName);
 
-    //FIXME:
-    //1st: mergeout..
-    //if autoMergeIn = true, we do it, else, user do it on their own
+    //--Do the merge out first, then do merge in
+    //if autoMergeIn = true, we do merge in automically, else, user do it on their own
     var autoMergeIn = mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
 
     if(autoMergeIn == true){
@@ -434,15 +432,19 @@ app.get('/merge', (req, res) => {
             //res.send("something is wrong when: " + checkin);
             console.log("error when merge in..");
         }
+
+        res.send("no collision need to be handled, automically checked in....");
     }else{
-        res.send("Please handle the collision and then merge in on your own..")
+        res.send("Please handle the collision and then merge in on your own..");
     }
 
 
 
 })
 
-//var getLatestCheckOutMan = function(path, manPref){
+
+//get the latest man file for certain command
+//useful when we want to connect checkin/merge it to their parent
 var getLatestMan = function(path, manPref){
 
     var allFilesInTarget = getAllFilesFromFolder(path);
@@ -454,10 +456,12 @@ var getLatestMan = function(path, manPref){
     //loop through all the filename in the target folder, only need check in man files
     for(let i = 0; i < allFileBaseName.length; i++){
         var currentFileName = allFileBaseName[i];
+        //only look for certain man prefix corresponding to certain command
         if(currentFileName.includes(manPref)){
             var tempAfterSplit = currentFileName.split(".")[1];
             var tempCurrentVal= parseInt(tempAfterSplit.slice(manPref.length-1, tempAfterSplit.length));
 
+            //using the time stamp to determine which one is the latest
             if(tempCurrentVal > latestManFileVal){
                 latestManFileVal = tempCurrentVal;
                 latestManFileName = currentFileName;
@@ -473,13 +477,15 @@ var getLatestMan = function(path, manPref){
 }
 
 
-//left will the checkinman file, right
+//needed in merge out, find the command ancestor man file for two man file
 var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
+    //use the (parent child relationship) file to find common ancestor
     var manHisPath = path.join(repoPath, manHistroyFileName);
     var historyLines = filesystem.readFileSync(manHisPath, "utf-8").split("\n").filter(Boolean);
     var historyDict = {};
 
-    //read into dictionar first
+    //read into dictionar first,
+    //key: current man file,  value: parent man file
     for(let i = 0; i < historyLines.length; i++){
         var currentLinePair = historyLines[i].split(":");
         var key = currentLinePair[0];
@@ -487,26 +493,27 @@ var findCommonAncestorMan = function(repoPath, checkinManName, checkOutManName){
         historyDict[key] = parent;
     }
 
-    var maxSerach = historyLines.length + 10;
-    var count = 0;
 
     var leftParent = checkinManName;
     var leftParentList = [];
     var tempPrev = leftParent;
+    //push all relation of checkin man file into the list, all the way back to create repo man file
     while(true){
         var tempParent = historyDict[leftParent];
         leftParentList.push(tempParent);
+        //if repeat, then it must be the merge in man file, where its parent is itself
         if(tempParent == tempPrev){
             break;
         }
         tempPrev =tempParent;
     }
 
-    //convert to checkin man file, becase left is a check in man file
+    //convert checkout man file to checkin man file, so we can do the compare
+    //basically find its parent
     var rightParent = historyDict[checkOutManName];
 
+    //keep tracing back, until same man file is found
     for(let j = 0; j < leftParentList.length; j++){
-
         for(let k = 0; k < leftParentList.length; k++){
             if(leftParentList[k] == rightParent){
                 return rightParent;
@@ -725,25 +732,6 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
 }
 
-app.get('/test', (req, res)=>{
-    var tempDict = {"create repo man: " : [{"check in man1" : []}, {"check in man2":[]}, {"check out man1" : []}, {"check out man2":[]} ]};
-
-    //var tempDict = {"create repo man" : ["data1", "data2", "data3"]};
-    var dictString = JSON.stringify(tempDict);
-    console.log("string: " + dictString);
-    filesystem.writeFile("test.json", dictString, (err)=>{
-        if(err){
-            console.log("write dict failed");
-            return;
-        }else{
-            console.log("json file created..");
-            return;
-        }
-
-    });
-
-    res.send("finished");
-});
 
 //save the files status to the repo at that specific moment to the repo
 app.get('/checkin', (req, res) =>{
@@ -778,6 +766,13 @@ var checkInOrMerge = function(sourcePath, targetPath, action, res){
         res.send("target path not exist: " + targetPath);
         return -1;
 
+    }
+
+    var manHisFilePath = path.join(targetPath, manHistroyFileName);
+
+    if(!filesystem.existsSync(manHisFilePath)){
+        res.send("you need to create the repo first...");
+        return -2;
     }
 
     if(action == "checkin"){
@@ -832,7 +827,6 @@ var checkInOrMerge = function(sourcePath, targetPath, action, res){
     //write to the record
     //var tempHisToWrite = manFileName + ":" + actualManFileName + "," + manFileName + "\n";
     //FIXME: not finished.
-    var manHisFilePath = path.join(targetPath, manHistroyFileName);
 
     //to find the parent
     //---1st, find the latest checkout man file in the target (if check in from the same folder as create repo)
