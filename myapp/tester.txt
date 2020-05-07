@@ -1,6 +1,0 @@
-.man1.rc label1
-.man1.rc label2
-.man1.rc label3
-.man2.rc label1
-.man2.rc label2
-.man2.rc label3

@@ -12,9 +12,6 @@ Enable the user to Check-out, or download a specific version someone checked in 
 Enable the user to Add Labels for a Manifest file in a given project repo, so it will works like a nick name when user check out
 Enable the user to List All The Labels that already assigned to the Manifest files
 */
-
-
-//important, for man file: man file name with prefix of .man-000 is in, with prefix of .man-111 is out
 const express = require('express');
 const app = express();
 const port = 3000;
@@ -29,11 +26,6 @@ const version = 8;
 //template part
 app.set('view engine', 'ejs');
 
-
-//some necessary global variables
-var checkInManPref =  ".man-000";
-var checkOutManPref = ".man-111";
-
 //list the .man files and their corresponding labels in the target repo
 app.get("/listLabels", function(req, res){
     res.sendFile(path.join(htmlsFolder, 'listLabels.html'));
@@ -44,8 +36,8 @@ app.get("/listLabels", function(req, res){
         return;
     }
 
-    //check the tartget path
     if(!filesystem.existsSync(targetRepo)){
+        console.log("target repo not exist");
         res.send("target folder not exist: " + targetRepo);
         return;
     }
@@ -60,49 +52,53 @@ app.get("/listLabels", function(req, res){
     //record of man file name and their labels
     var manLabelsFilePath = path.join(targetRepo, ".manLabel.rc");
 
-
-    var allFileBaseName = getAllBaseName_List(allFilesInTarget);
-    var allManBaseName = [];
-
-    //loop through all the filename in the target folder, only need check in man files
-    for(let i = 0; i < allFileBaseName.length; i++){
-        if(allFileBaseName[i].includes(checkInManPref)){
-            allManBaseName.push(allFileBaseName[i]);
-        }
-    }
-
-    //if the labels file does not exist, then we can just display the file name
+    //if the labels file exist, then we can just display the file name
     if(!filesystem.existsSync(manLabelsFilePath)){
+        var allFileBaseName = getAllBaseName_List(allFilesInTarget);
+        var allManBaseName = [];
+        for(let i = 0; i < allFileBaseName.length; i++){
+            if(allFileBaseName[i].includes(".man-000")){
+                allManBaseName.push(allFileBaseName[i]);
+            }
+        }
         console.log("Man label record not exist: ", manLabelsFilePath);
         resultDict["All Man Files (No Labels Are Added)"] = allManBaseName;
         res.render('listLabels', {manLabelsDict: resultDict, repoPath:targetRepo});
 
     }else{
-        //if the labes file exist, display man file name with labels
+        var allFileBaseName = getAllBaseName_List(allFilesInTarget);
+        var allManBaseName = [];
+        for(let i = 0; i < allFileBaseName.length; i++){
+            if(allFileBaseName[i].includes(".man-000")){
+                allManBaseName.push(allFileBaseName[i]);
+            }
+        }
 
-        //key: man file name, value: empty list for now
-        //so man files with no lables will also be displayed
         for(let k = 0; k < allManBaseName.length; k++){
             resultDict[allFileBaseName[k]] = [];
         }
 
+    //if there are record of man file name and labels, we will use that
+        console.log("Man label record exist: ", manLabelsFilePath);
 
-        //read the labels file into list of lines
+        //convert the file into list of lines
         var lines = filesystem.readFileSync(manLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
         //make the man: [labels] to dictionary relationship
         for(let i =0; i< lines.length; i++){
             var currentLine = lines[i];
             var tempList = currentLine.split(" ");
-            var manOrgName = tempList[0];
-            var manLabelsList = tempList[1].split(",");
+            manOrgName = tempList[0];
+            manLabelsList = tempList[1].split(",");
 
             if(manOrgName in resultDict){
                 for(let k = 0; k < manLabelsList.length; k ++){
                     //push one label to the dictionary at a time
+                    //console.log("pushing: ");
                     resultDict[manOrgName].push(manLabelsList[k]);
                 }
             }else{
+                //console.log("new: ");
                 resultDict[manOrgName] = manLabelsList;
             }
         }
@@ -114,33 +110,33 @@ app.get("/listLabels", function(req, res){
 
 });
 
-//providing the file with man file label info, and the label user knows,
-//return the actual name of the .man file the user really refer to
+//providing the file with manFileName and labels, and label user provide,
+//return the actual name of the .man file the user means
 var getActualManFileName = function(sourceLabelsFilePath, label){
     //if the file is not exist, there is no where to search the origianl man file name
     if(!filesystem.existsSync(sourceLabelsFilePath)){
         return false;
     }
 
-    //read the file into list of lines
+    //convert the file into list of lines
     var lines = filesystem.readFileSync(sourceLabelsFilePath, 'utf-8').split("\n").filter(Boolean);
 
     //look for the .man file name with that label
     for(let i =0; i< lines.length; i++){
         var currentLine = lines[i];
         var tempList = currentLine.split(" ");
-        var manOrgName = tempList[0];
-        var manLabelsList = tempList[1].split(",");
+        manOrgName = tempList[0];
+        manLabelsList = tempList[1].split(",");
 
-        //if the label is already the actual man file name, return it
         if(manOrgName == label){
             return manOrgName;
         }
 
-        //do the search by searching the label list
         for(let j = 0; j < manLabelsList.length; j++){
+            //var currentLabel = manLabelsList[j];
             var currentLabel = manLabelsList[j].replace("\r","");
             if(currentLabel == label){
+                console.log("found: ", manOrgName);
                 return manOrgName;
             }
         }
@@ -148,54 +144,34 @@ var getActualManFileName = function(sourceLabelsFilePath, label){
 
     return "Not FOUND";
 
+
 }
 
 
-//get the list of all [filename, orgRelativePath] list from the man file (for checkout)
+//get the [filename, orgRelativePath] list from the man file
 var getFileNamesFromMan = function(manFilePath){
     var lines = filesystem.readFileSync(manFilePath, 'utf-8').split("\n").filter(Boolean);
     var resultList = [];
     for (let i = 0; i < lines.length; i++){
         var splitList = lines[i].split("\t");
+        console.log("the split list: ", splitList);
         var oneFileName = splitList[0];
         var fileOrgPath = splitList[1];
         resultList.push([oneFileName, fileOrgPath]);
     }
 
+    console.log("the file name list: ", resultList);
     return resultList;
 }
 
 
 
 
-var getCheckInManName = function(){
-    var manCounter = new Date();
-    var manFileName = checkInManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
-    return manFileName;
-}
-
-var getCheckOutManName = function(){
-    var manCounter = new Date();
-    var manFileName = checkOutManPref + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
-    return manFileName;
-}
-
-var getTodayForMan = function(){
-    var today = new Date().toLocaleDateString(undefined,{
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    })
-    today = today.replace(',','');
-    return today;
-
-}
 
 //copy files from repo to target folder according the .man file
 app.get('/checkout', (req, res) =>{
 
+    //now we get 2 user input
     res.sendFile(htmlsFolder + "checkOut.html");
 
     //the source repo the user want to download
@@ -227,14 +203,14 @@ app.get('/checkout', (req, res) =>{
 
     var actualManFileName = "";
 
-    //if the label user provided is the original name
+    //either the label user provided is the original name, or part of the labels already exist
+    //else return
     if (filesystem.existsSync(path.join(sourceRepoPath,sourceManLabel))){
         actualManFileName = sourceManLabel;
-
-    //check existing labels
     }else if(filesystem.existsSync(manLabelsFilePath)){
+        console.log("the man labels file does not exist: " , manLabelsFilePath);
+        console.log("******************");
         actualManFileName = getActualManFileName(manLabelsFilePath, sourceManLabel);
-
     }else{
         console.log("either manlabel file not exist or the man file not exist..");
         res.send("either the manfilename or the label you provide not exist: " + sourceManLabel);
@@ -248,28 +224,31 @@ app.get('/checkout', (req, res) =>{
     //now we have the abs path to the .man file the user want to use to check out
 
 
-    //check if what we found exist
+    //FIXME: for now, don't think about record to the man yet..
     if(!filesystem.existsSync(checkoutFromManPath)){
         console.log("the check out from man file not exist: ", checkoutFromManPath);
         return;
     }
 
-    targetPath = path.join(targetPath, path.basename(sourceRepoPath));
     //get the names of the files that we need to copy
     //idx 0 is the artName so far, idx 1 is the original tree structure
     var fileNameList = getFileNamesFromMan(checkoutFromManPath);
 
-    //FIXME: not sure, I guess this can be deleted, need to test for that
+    console.log("the origianl targetPath: ", targetPath);
+    targetPath = path.join(targetPath, path.basename(sourceRepoPath));
+    console.log("the result targetPath: ", targetPath);
     //create a folder with the same name as repo folder under the target folder
     if(!filesystem.existsSync(targetPath)){
         filesystem.mkdirSync(targetPath);
     }
 
-    //target path = originalTargetPath + the base folder of the project
-    //so when I copy the man file, copy to under the base folder of the copy
-    var targetManFilePath = path.join(targetPath, fileNameList[0][1].split("\\")[0]);
+    console.log("filename[0][1]: ", fileNameList[0][1]);
 
-    var manFileName = getCheckOutManName();
+
+    //date and time for names for .man file
+    var manCounter = new Date();
+    //FIXME: this is important 000 is in, 111 is out
+    var manFileName = ".man-" + "111" + manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     //records the checkout details
     var manLocation = path.join(sourceRepoPath, manFileName);
@@ -280,12 +259,27 @@ app.get('/checkout', (req, res) =>{
 
 
     //date and time for .man file records
-    var today = getTodayForMan();
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
+
     var overallManRecord = "";
+
+    //FIXME:..
+    for(let j = 0; j < fileNameList.length; j++){
+
+    }
+    //targetPath = path.join(targetPath, originalProjectFolderName);
 
     //do the copy part: from repo to user target
     for(let i = 0; i < fileNameList.length; i++){
         var currentFilePath = path.join(sourceRepoPath, fileNameList[i][0]);
+        //copyFileTo(currentFilePath, path.join(targetPath, fileNameList[i]));
         var fileOrgRelativePathDir = path.dirname(fileNameList[i][1]);
 
         var currentTargetDir = path.join(targetPath, fileOrgRelativePathDir);
@@ -311,7 +305,10 @@ app.get('/checkout', (req, res) =>{
 
 
 
-    //writing records to man file
+
+
+
+    //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
         {
@@ -324,7 +321,7 @@ app.get('/checkout', (req, res) =>{
 
                 //save all the man records at this snapshot
                 console.log("finished creating man file: " + manFileName);
-                copyFileTo(manLocation, path.join(targetManFilePath, manFileName));
+                copyFileTo(manLocation, path.join(targetPath, manFileName));
             });
         }
     });
@@ -359,33 +356,47 @@ app.get('/checkin', (req, res) =>{
 
     }
 
-    var manFileName = getCheckInManName();
+    //date and time for names for .man file
+    var manCounter = new Date();
+    var manFileName = ".man-" +"000"+ manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     var manLocation = path.join(targetPath, manFileName);
+
+
 
     //get the base folder of the sourcePath, because the .man record
     //need to use it as the starting folder in the relative path
     var sourceBaseFolder = path.basename(sourcePath);
 
 
+
+
     //call the scan function, and get the result list, all paths
     var results =  getAllFilesFromFolder(sourcePath);
 
 
+    console.log("finished the search..");
 
     //used for calculating the ArtID
 
     //date and time for .man file records
-    var today = getTodayForMan();
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
 
     var overallManRecord = "";
-    //loop over all the files with their paths, and given them art names and save
+    //loop over all the filePath in the sourcePath, one at a time
     results.forEach(function(file){
         var oneManRecord = getArtNameAndSave(file, sourceBaseFolder, targetPath, today, "checkin");
         overallManRecord += oneManRecord;
     });
 
-    //record to the man file
+    //check if manifest file exist, if not, create it
     filesystem.access(manLocation, (err) =>{
         if(err)
         {
@@ -396,7 +407,8 @@ app.get('/checkin', (req, res) =>{
                 };
 
 
-                //copy man file to the source
+                //save all the man records at this snapshot
+                console.log("finished creating man file: " + manFileName);
                 copyFileTo(manLocation, path.join(sourcePath, manFileName));
             });
         }
@@ -434,8 +446,9 @@ app.get('/createrepo', (req, res) =>{
 
     }
 
-    //same rule as check in man name
-    var manFileName = getCheckInManName();
+    //date and time for names for .man file
+    var manCounter = new Date();
+    var manFileName = ".man-" + "000"+ manCounter.getYear() + manCounter.getMonth() + manCounter.getTime()+ ".rc";
 
     var manLocation = path.join(targetPath, manFileName);
 
@@ -467,7 +480,14 @@ app.get('/createrepo', (req, res) =>{
     var count = 0;
 
     //date and time for .man file records
-    var today = getTodayForMan();
+    var today = new Date().toLocaleDateString(undefined,{
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+    today = today.replace(',','');
 
     var overallManRecord = "";
     //loop over all the filePath in the sourcePath, one at a time
@@ -578,6 +598,16 @@ var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, comm
 };
 
 
+//should work with setTimeOut, save file in a slower manner, so the file to save to
+//will eventually exist
+var appendToFile = function(filePath, content){
+    filesystem.appendFile(filePath, content, function (err) {
+        console.log("recording manRecord: " + content);
+        if (err) throw err;
+        console.log('Saved!');
+    });
+
+};
 
 //should work with setTimeOut, copy file in a slower manner,
 //so the file will be updated and will keep copying after main loop exit
