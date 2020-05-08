@@ -725,11 +725,10 @@ app.get('/addLabel', function(req, res){
 //root, return the main html page
 app.get('/', function(req, res){
     res.sendFile(path.join(htmlsFolder, 'DonMainPage.html'));
+    app.use(express.static('htmlFiles'));
+    console.log("Running...");
 });
 
-app.get('/sketch', function(req, res){
-    res.sendFile(path.join(path.join(__dirname, "p5/"), 'sketch.js'));
-})
 
 
 //return list of base name with parameter of one dir path(here it will do the search)
