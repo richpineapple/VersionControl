@@ -387,7 +387,7 @@ app.get("/mergein", (req, res)=>{
 
 //merge two different snapshots
 app.get('/mergeout', (req, res) => {
-    res.sendFile(path.join(htmlsFolder, "merge.html"))
+    res.sendFile(path.join(htmlsFolder, "mergeout.html"))
 
     var repoPath = req.query.repoPath;
     var repoManLabel = req.query.repoManLabel;
@@ -1002,7 +1002,7 @@ var getArtName = function(file, sourceBaseFolder, targetPath, today, command){
         relativePathStr = path.join(relativePathStr, pathPart);
     });
 
-    console.log("the relative path: " + relativePathStr);
+    //console.log("the relative path: " + relativePathStr);
 
 
     //the format of artID: Pa-Lb-Cc
