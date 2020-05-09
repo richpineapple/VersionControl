@@ -427,13 +427,15 @@ app.get('/merge', (req, res) => {
     var autoMergeIn = mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
 
     if(autoMergeIn == true){
+        /*
         var result = checkInOrMerge(targetProjectPath,repoPath, "mergein", res);
         if(result < 0 ){
             //res.send("something is wrong when: " + checkin);
             console.log("error when merge in..");
         }
+        */
 
-        res.send("no collision need to be handled, automically checked in....");
+        res.send("NO COLLISION: merge in when you are ready");
     }else{
         res.send("Please handle the collision and then merge in on your own..");
     }
@@ -531,8 +533,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //if grandma is needed for the collision, then set to false, let use mergein on their own
     var autoMergeIn = true;
 
-    //first, do the checkin
-    //var repoTManName = getMergeManName();
+    //first, do the check out
     var repoTManName = getMergeOutManName();
     var repoTManLocation = path.join(repoPath, repoTManName);
     var tBaseFolder = path.basename(tPath);
@@ -542,9 +543,11 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     var today = getTodayForMan();
 
     var overAllManRecord = "";
+    //key: relative path,  value: result art name
     var tManDict = {};
     var tManFullRecordDict = {};
-    //FIXME: remember to save to the man file at some point later
+
+    //calculate the art name of the files in tPath, so it will enable us to do comparison
     allFilesPath.forEach(function(oneFilePath){
         var oneManRecord = getArtNameAndSave(oneFilePath, tBaseFolder, repoPath, today, "mergeout", false);
         if(oneManRecord.length > 0){
@@ -553,13 +556,13 @@ var mergeOut = function(tPath, repoPath, repoManPath){
             tManDict[tempList[1]] = tempList[0];
             tManFullRecordDict[tempList[1]] = oneManRecord;
 
-            //overAllManRecord = overAllManRecord + oneManRecord;
         }
     });
 
     //step two: deal with conflicts
 
-    //read the R man file into list first
+    //read the R man file into dictionary
+    //key: relative path, value: art name
     var rManDict = {};
     //if has more files than tManFile, add the extra man record line
     var rManFullRecordDict = {};
@@ -577,14 +580,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     var commonAncestorMan = findCommonAncestorMan(repoPath, path.basename(repoManPath),targetLastCheckOut);
 
     //now we have the name of the man file of the common ancestor
-    //read the man file into
+    //read the man file into dictionary
     var pManFilePath = path.join(repoPath, commonAncestorMan);
     var pManFileLines = filesystem.readFileSync(pManFilePath, "utf-8").split("\n").filter(Boolean);
+    //key: the P value in art name,  value: the full art name
     var pManDict = {};
     pManFileLines.forEach(function(oneLine){
         var temp = oneLine.split("\t");
         //key: art name path part, value: full art name
-        //pManDict[temp[1]] = temp[0];
         var pathPart = temp[0].split(".")[0].split("-")[0];
         pManDict[pathPart] = temp[0];
     });
@@ -599,14 +602,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //--CONDITION ONE: if art name is the same, then we just replace/ignore
     for(let oneKey in tManDict){
         if(rManDict.hasOwnProperty(oneKey)){
-            //console.log("repeat: " + oneKey);
             var rArtName = rManDict[oneKey];
             var tArtName = tManDict[oneKey];
 
             if(rArtName == tArtName){
                 var relativePath = path.join(path.basename(repoPath), rArtName);
                 var fromPath = path.join(repoPath, rArtName);
-                var toPath = path.join(path.dirname(tPath), relativePath);
+                //var toPath = path.join(path.dirname(tPath), relativePath);
+                var toPath = path.join(path.dirname(tPath), oneKey);
                 var oneManRecord = rArtName + "\t" + relativePath+"\t"+ getTodayForMan()+"\t"+ "mergeout("+ fromPath +","+ toPath +")" + "\n";
                 overAllManRecord = overAllManRecord + oneManRecord;
             }else{
@@ -623,7 +626,6 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     }
 
     //--CONDITION TWO: if has extra files that don't collide, copy it
-    //FIXME: may need to change the command, not just copy... do this for now..
     // whatever left in rManDict will be new files we need to add to tManFile
     for(let tempKey in rManDict){
         var tempArtName = rManDict[tempKey];
@@ -637,14 +639,8 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         overAllManRecord = overAllManRecord + tempArtName + "\t" + tempRelativePath+ "\t" + getTodayForMan() + "\t" + "++mergeOut("+newArtFilePath+","+copyToPath + ")\n"
     }
 
-    //FIXME: not finished
-    //--CONDITION THREE: if same artname and path, and collide
-
-
-
-
-    //var latestManFileName = getLatestMan(repoPath, checkInManPref);
-
+    //--CONDITION THREE: if same  path but different art name, then collide,
+    //copy/rename the MR MT MG files
 
     for(let i = 0; i < collisionList.length; i++){
         //need to get its path first
@@ -702,9 +698,6 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
         //int the tProjectFolder, get the lastesst checkout man file, then get the parent version of that file
 
-
-
-
     }
 
 
@@ -715,6 +708,9 @@ var mergeOut = function(tPath, repoPath, repoManPath){
     //save the man file
     filesystem.access(repoTManLocation, (err)=>{
         if(err){
+            //filesystem.writeFileSync(repoTManLocation, overAllManRecord);
+            //copy the man file to target
+            //copyFileTo(repoTManLocation, path.join(tPath, repoTManName));
             filesystem.writeFile(repoTManLocation, overAllManRecord, (err)=>{
                 if(err){
                     console.log("save overallManrecord failed..");
@@ -728,6 +724,8 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         }
     })
 
+    //if condition 3 is true, will return false
+    //else will return true
     return autoMergeIn;
 
 }
@@ -740,14 +738,18 @@ app.get('/checkin', (req, res) =>{
     var sourcePath = req.query.sourcePath;
     var targetPath = req.query.targetPath;
 
+    //do the actual work of check in
     var result = checkInOrMerge(sourcePath, targetPath, "checkin", res)
+
     if(result < 0 ){
-        //res.send("something is wrong when: " + checkin);
+        console.log("something is wrong when checkin...");
+        return;
     }
 
 });
 
 
+//since about 80% of code is the same for checkin and merge in..put them in the same function
 var checkInOrMerge = function(sourcePath, targetPath, action, res){
 
     //this line is important, because when first loaded, the code will
@@ -768,6 +770,7 @@ var checkInOrMerge = function(sourcePath, targetPath, action, res){
 
     }
 
+    //ready to record to the history about the parent->child relationship
     var manHisFilePath = path.join(targetPath, manHistroyFileName);
 
     if(!filesystem.existsSync(manHisFilePath)){
@@ -775,6 +778,7 @@ var checkInOrMerge = function(sourcePath, targetPath, action, res){
         return -2;
     }
 
+    //depending on the action, man file name will be different
     if(action == "checkin"){
         var manFileName = getCheckInManName();
     }else{
@@ -824,10 +828,7 @@ var checkInOrMerge = function(sourcePath, targetPath, action, res){
 
 
 
-    //write to the record
-    //var tempHisToWrite = manFileName + ":" + actualManFileName + "," + manFileName + "\n";
-    //FIXME: not finished.
-
+    //write to the record about the parent->child relationship
     //to find the parent
     //---1st, find the latest checkout man file in the target (if check in from the same folder as create repo)
     var lastCheckOutManName = "";
@@ -852,6 +853,7 @@ var checkInOrMerge = function(sourcePath, targetPath, action, res){
     var tempHisToWrite = manFileName + ":" + lastCheckOutManName + "," + manFileName + "\n";
 
 
+    //record the relationship
     filesystem.appendFile(manHisFilePath, tempHisToWrite, (err)=>{
         if(err){
             console.log("append the man history failed.");
@@ -1036,10 +1038,10 @@ var getArtName = function(file, sourceBaseFolder, targetPath, today, command){
 }
 
 //calculate the artID and then save to  target folder
-//var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command){
 var getArtNameAndSave = function(file, sourceBaseFolder, targetPath, today, command, save){
 
 
+    //call helper function
     var tempResult = getArtName(file, sourceBaseFolder, targetPath, today, command);
     if(tempResult.length == 0){
         return "";
