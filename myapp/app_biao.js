@@ -386,7 +386,7 @@ app.get("/mergein", (req, res)=>{
 })
 
 //merge two different snapshots
-app.get('/merge', (req, res) => {
+app.get('/mergeout', (req, res) => {
     res.sendFile(path.join(htmlsFolder, "merge.html"))
 
     var repoPath = req.query.repoPath;
