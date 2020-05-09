@@ -724,9 +724,7 @@ app.get('/addLabel', function(req, res){
 
 //root, return the main html page
 app.get('/', function(req, res){
-    res.sendFile(path.join(htmlsFolder, 'DonMainPage.html'));
-    app.use(express.static('htmlFiles'));
-    console.log("Running...");
+    res.sendFile(path.join(htmlsFolder, 'MainPage.html'));
 });
 
 
