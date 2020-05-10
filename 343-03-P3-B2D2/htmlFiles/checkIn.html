@@ -1,23 +1,52 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Check In</title>
-</head>
-<body>
-<h1> Check In </h1>
-<form>
-<!--<<form class="" action="" method="get"> -->
-  Source Path:<br>
-  <input type="text" name="sourcePath" required>
-  <br>
-  Target Repo Path:<br>
-  <input type="text" name="targetPath" required>
-  <br>
-  <br>
-  <input type="submit" value="check in">
+    <head>
+        <style>
+            body, html {
+            height: 100%;
+            margin: 0;
+            }
 
-  <br>
-</form>
+            .bg {
+            /* The image used */
+            background-image: url("https://assets.plan.io/images/blog/5-setps-to-create-technical-documentation.png");
+            /*
+            background-image: url('/mainBackground.jpg');
+            */
 
-</body>
+            /* Full height */
+            height: 130%;
+
+            /* Center and scale the image nicely */
+            background-position: left top;
+            background-repeat: no-repeat;
+            background-size: cover;
+            }
+            /* centers an image */
+            .center{
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                width: 50%;
+            }
+        </style>
+        <title>Check In</title>
+    </head>
+    <div class="bg">
+        <body>
+            <h1> Check In </h1>
+            <form>
+                Source Path:<br>
+                <input type="text" name="sourcePath" required>
+                <br>
+                Target Repo Path:<br>
+                <input type="text" name="targetPath" required>
+                <br>
+                <br>
+                <input type="submit" value="check in">
+
+                <br>
+            </form>
+        </body>
+    </div>
 </html>
