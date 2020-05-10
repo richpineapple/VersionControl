@@ -115,7 +115,7 @@ Sample Invocation and results
 
 
 Features
-    -Created clickable links for “Create Repo Folder”, “Check-in”, “Check-out”, ,“add-label”, and “list-label” (extra) so the user does not need to manually type in the url links for them.
+    -Created clickable links for “Create Repo Folder”, “Check-in”, “Check-out”, ,“add-label”, “list-label”, "merge out" and "merge in" so the user does not need to manually type in the url links for them.
     -Users can define the project they are working on as the source, so the path to that will be the source path, and they can also decide where they are going to save the copies of their source, which is called target path. After user input “sourcePath” and “targetPath” in the create repo page, the state of the files in the source path will be copied to the target path for that specific moment and time.
     -Users are able to check in any time they want, which means they are able to save the states of their project at any moment after they already created the repo
     -Users are able to check out any version of their check-ins whenever they want, which means they can download different versions of the same project as long as they provide necessary information required, one requirement is that the create repo should already be done
@@ -126,6 +126,7 @@ Features
 
 Bugs
    We found out that we forgot to put the html files in the htmls folder in part 1 submission  last time
+   Not able to send error html pages after we get inputs from the html pages, so we use the alternative of send strings not sending html files for error messages
 
 
 
