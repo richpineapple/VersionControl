@@ -328,7 +328,7 @@ app.get('/checkout', (req, res) =>{
         var currentFileName = fileNameList[i][0];
         var relativePath = path.join(sourceBaseFolder, currentFileName);
         var oneCommand = currentFileName + '\t' + relativePath + "\t" + today +
-            "\t" + "checkout(" + path.join(sourceRepoPath, currentFileName) +"," +
+            "\t" + "checkout(" + path.join(sourceRepoPath, currentFileName) +"," + manFileName + ',' +
             path.join(currentTargetDir, path.basename(fileNameList[i][1])) + ")\n";
         overallManRecord += oneCommand;
     }
@@ -427,13 +427,6 @@ app.get('/mergeout', (req, res) => {
     var autoMergeIn = mergeOut(targetProjectPath, repoPath, path.join(repoPath, actualManFileName));
 
     if(autoMergeIn == true){
-        /*
-        var result = checkInOrMerge(targetProjectPath,repoPath, "mergein", res);
-        if(result < 0 ){
-            //res.send("something is wrong when: " + checkin);
-            console.log("error when merge in..");
-        }
-        */
 
         res.send("NO COLLISION: merge in when you are ready");
     }else{
@@ -596,6 +589,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
 
 
 
+    var rManFileName = path.basename(repoManPath);
     //compare the tManDict and rManDict to check the collisions
         //list of list, [rArtName, tArtName]
     var collisionList = [];
@@ -610,7 +604,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
                 var fromPath = path.join(repoPath, rArtName);
                 //var toPath = path.join(path.dirname(tPath), relativePath);
                 var toPath = path.join(path.dirname(tPath), oneKey);
-                var oneManRecord = rArtName + "\t" + relativePath+"\t"+ getTodayForMan()+"\t"+ "mergeout("+ fromPath +","+ toPath +")" + "\n";
+                var oneManRecord = rArtName + "\t" + relativePath+"\t"+ getTodayForMan()+"\t"+ "mergeout("+ fromPath +","+ rManFileName + ","+ toPath +")" + "\n";
                 overAllManRecord = overAllManRecord + oneManRecord;
             }else{
                 console.log("different art name: " + rArtName + ", " + tArtName);
@@ -625,6 +619,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         }
     }
 
+    //
     //--CONDITION TWO: if has extra files that don't collide, copy it
     // whatever left in rManDict will be new files we need to add to tManFile
     for(let tempKey in rManDict){
@@ -636,7 +631,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         var tempRelativePath = path.join(path.basename(repoPath), tempArtName);
         copyFileTo(newArtFilePath, copyToPath);
         //overAllManRecord = overAllManRecord + rManFullRecordDict[tempKey].replace("checkin", "merge") + "\n";
-        overAllManRecord = overAllManRecord + tempArtName + "\t" + tempRelativePath+ "\t" + getTodayForMan() + "\t" + "++mergeOut("+newArtFilePath+","+copyToPath + ")\n"
+        overAllManRecord = overAllManRecord + tempArtName + "\t" + tempRelativePath+ "\t" + getTodayForMan() + "\t" + "++mergeOut("+newArtFilePath+"," + rManFileName + ","+copyToPath + ")\n"
     }
 
     //--CONDITION THREE: if same  path but different art name, then collide,
@@ -656,14 +651,14 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         //copy rCollided file to target with modified name
         //copyFileTo(path.join(repoPath, collisionList[i][0]), path.join(tPath, resultRFileName));
         copyFileTo(mrFrom, mrTo);
-        overAllManRecord = overAllManRecord + mrArtName+ "\t" + mrRelativePath + "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mrFrom+","+mrTo+ ")\n"
+        overAllManRecord = overAllManRecord + mrArtName+ "\t" + mrRelativePath + "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mrFrom+","+ rManFileName + ","+mrTo+ ")\n"
 
         var resultTFileName = tempSameNameList[0] + "_MT" + "." + tempSameNameList[1];
         var mtFrom = tempTOrgPath;
         var mtTo =  path.join(tPath, resultTFileName);
         var mtArtName = collisionList[i][1];
         var mtRelativePath = path.join(path.basename(repoPath), mtArtName);
-        overAllManRecord = overAllManRecord + mtArtName+ "\t" + mtRelativePath+ "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mtFrom+","+mtTo+ ")\n"
+        overAllManRecord = overAllManRecord + mtArtName+ "\t" + mtRelativePath+ "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mtFrom+","+ rManFileName + ","+mtTo+ ")\n"
         //rename the tCollided file in the target
         //console.log("the temp target path.. " + tempTargetPath);
         //filesystem.rename(tempTOrgPath, path.join(tPath, resultTFileName), (err)=>{
@@ -690,7 +685,7 @@ var mergeOut = function(tPath, repoPath, repoManPath){
         copyFileTo(mgFrom, mgTo);
         //overAllManRecord = overAllManRecord + tempArtName + "\t" + tempRelativePath+ "\t" + getTodayForMan() + "\t" + "++mergeOut("+newArtFilePath+","+copyToPath + ")\n"
         //add the three records to overall record
-        overAllManRecord = overAllManRecord + mgArtName+ "\t" + mgRelativePath + "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mgFrom+","+mgTo+ ")\n"
+        overAllManRecord = overAllManRecord + mgArtName+ "\t" + mgRelativePath + "\t" + getTodayForMan() + "\t" + "Collide_mergeOut("+mgFrom+","+ rManFileName + ","+mgTo+ ")\n"
 
 
         //copy the parent collided file with modified name
